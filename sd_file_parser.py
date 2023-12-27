@@ -579,7 +579,7 @@ def log_errors( error ):
             file.write(error + '\n')
         First = False
 
-def parseLocationFiles( inputFileName=None, outputFileName='displacement.CSV',
+def parseLocationFiles(inputFileName, outputFileName='displacement.CSV',
          kind='FLT', reportProgress=True, outputFileType='CSV',
         versionNumber=defaultVersion,IIRWeightType=defaultIIRWeightType ):
     """
