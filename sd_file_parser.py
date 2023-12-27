@@ -253,20 +253,28 @@ class Spectrum:
     def b1(self):
         return self._data['b1']
 
+    def _datamean(self, key, axis=1):
+        item = self._data[key]
+        if item is None:
+            raise RuntimeError(f"Field '{key}' is not initialized in _data")
+        assert isinstance(item, np.ndarray)
+        return np.mean(item, axis=axis)
+
+
     def _Qyzm(self):
-        return np.mean( self._data['Qyz'],1 )
+        return self._datamean("Qyz")
 
     def _Qxzm(self):
-        return np.mean( self._data['Qxz'],1 )
+        return self._datamean("Qxz")
 
     def _Sxxm(self):
-        return np.mean( self._data['Sxx'],1 )
+        return self._datamean("Sxx")
 
     def _Syym(self):
-        return np.mean( self._data['Syy'],1 )
+        return self._datamean("Syy")
 
     def _Szzm(self):
-        return np.mean( self._data['Szz'],1 )
+        return self._datamean("Szz")
 
     @property
     def f(self):
