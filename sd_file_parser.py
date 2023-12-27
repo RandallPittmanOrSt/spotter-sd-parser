@@ -160,6 +160,7 @@ Major Updates:
 # Implementation
 #----------------
 #
+from datetime import datetime, timezone
 import fnmatch
 import gzip
 import inspect
@@ -605,33 +606,44 @@ def parseLocationFiles(inputFileName, outputFileName='displacement.CSV',
     #
     header = 'year,month,day,hour,min,sec,msec'
     if kind=='FLT':
-        #
-        # Read the data using pandas, and convert to numpy
-        #
-        data = pd.read_csv( inputFileName ,
-                index_col=False , usecols=(1,2,3,4) )
-        data = data.apply(pd.to_numeric,errors='coerce')
-        data = data.values
-
-        msk = np.isnan( data[:,0] ) | np.isnan( data[:,1] ) | np.isnan( data[:,2] ) | np.isnan( data[:,3] )
-        data = data[~msk,:]
-        datetime    = epochToDateArray(data[:,0])
-        data        = data[:,1:4]/1000.
+        # Read the data using pandas
+        data = pd.read_csv(
+            inputFileName, skiprows=1, header=None,
+            names=["epoch_t", "outx", "outy", "outz"],
+            index_col=[0], usecols=range(1,5),
+        )
+        colunits = {"epoch_t": "s", "outx": "mm", "outy": "mm", "outz": "mm"}
+        data = data.apply(pd.to_numeric, errors='coerce')  # Seems unnecessary?
+        # Drop any rows with NaNs
+        data = data.dropna(axis=0, how="any")
+        # Convert the epoch time to a datetime, then to separate columns
+        data = _filter_bad_epochs(data)
+        data.index = pd.to_datetime(data.index, unit="s")
+        period_names = ["year", "month", "day", "hour", "minute", "second", "millisecond"]
+        for col_i, period in enumerate(period_names[:-1]):
+            data.insert(loc=col_i, column=period, value=getattr(data.index, period))
+        data.insert(loc=col_i+1, column="millisecond", value=np.uint32(data.index.microsecond/1000))
+        data = data.set_index(period_names)
+        float_fmt = "%.5e"
+        # Convert to meters
+        for colname in ["outx", "outy", "outz"]:
+            data[colname] = data[colname]/1000
+            colunits[colname] = "m"
         #
         # Apply phase correction to displacement data
         #
         if applyPhaseCorrection and versionNumber>=applyPhaseCorrectionFromVersionNumber:
             #
             print('- IIR phase correction using weight type: ', str(IIRWeightType ) )
-            for ii in range(0,3):
-                #
-                data[:,ii] = applyfilter( data[:,ii] , 'backward' , versionNumber, IIRWeightType )
-                #
+            for colname in ["outx", "outy", "outz"]:
+                data[colname] = applyfilter(
+                    data[colname], "backward", versionNumber, IIRWeightType
+                )
             #        
-        data        = np.concatenate( (datetime,data) , axis=1 )
-            
         fmt = '%i,'*7  + '%.5e,%.5e,%.5e'
         header=header+', x (m), y(m), z(m)'
+        data.to_csv(outputFileName, float_format=float_fmt)
+        return
     elif kind=='SST':
         #
         # Read the data using pandas, and convert to numpy
@@ -752,6 +764,17 @@ def parseLocationFiles(inputFileName, outputFileName='displacement.CSV',
     return( None )
     #
 #end def
+
+
+def _nowutc():
+    return datetime.now().astimezone(timezone.utc)
+
+
+def _filter_bad_epochs(data: pd.DataFrame) -> pd.DataFrame:
+    if (bad_dt := data.index[data.index > _nowutc().timestamp()]).size > 0:
+        data = data.drop(index=bad_dt)
+    return data
+
 
 def epochToDateArray( epochtime ):
     #
