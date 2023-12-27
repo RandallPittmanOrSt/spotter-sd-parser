@@ -160,15 +160,16 @@ Major Updates:
 # Implementation
 #----------------
 #
-import inspect
-import numpy as np
-import os
-import pandas as pd
-from scipy import signal, io
-import time
 import fnmatch
 import gzip
+import inspect
+import os
 import sys
+import time
+
+import numpy as np
+import pandas as pd
+from scipy import io, signal
 
 #'SHA <-> version-number' relation
 #(note that duel entry for 1.2.5/1.4.2 is due to update glitches)
