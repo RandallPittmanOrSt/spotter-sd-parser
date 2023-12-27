@@ -561,7 +561,7 @@ def main( path = None , outpath=None, outputFileType='CSV',
         # Generate bulk parameter file
         if bulkParameters:
             spectrum = Spectrum(path=outpath,outpath=outpath)
-            if spectra.spectral_data_is_available:
+            if spectrum.spectral_data_is_available:
                 spectrum.generate_text_file()
     #Versions
     #
