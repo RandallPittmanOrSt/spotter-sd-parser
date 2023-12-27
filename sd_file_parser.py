@@ -617,7 +617,7 @@ def parseLocationFiles(inputFileName, outputFileName='displacement.CSV',
         # Drop any rows with NaNs
         data = data.dropna(axis=0, how="any")
         # Convert the epoch time to a datetime, then to separate columns
-        data = _filter_bad_epochs(data)
+        data = _filter_bogus_epochs(data)
         data.index = pd.to_datetime(data.index, unit="s")
         period_names = ["year", "month", "day", "hour", "minute", "second", "millisecond"]
         for col_i, period in enumerate(period_names[:-1]):
@@ -770,7 +770,8 @@ def _nowutc():
     return datetime.now().astimezone(timezone.utc)
 
 
-def _filter_bad_epochs(data: pd.DataFrame) -> pd.DataFrame:
+def _filter_bogus_epochs(data: pd.DataFrame) -> pd.DataFrame:
+    """Simple filter to remove any data with timestamps greater than now."""
     if (bad_dt := data.index[data.index > _nowutc().timestamp()]).size > 0:
         data = data.drop(index=bad_dt)
     return data
