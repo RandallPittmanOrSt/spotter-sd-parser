@@ -786,7 +786,7 @@ def epochToDateArray( epochtime ):
 #
     
 
-def parseSpectralFiles(   inputFileName=None, outputPath = None,
+def parseSpectralFiles(   inputFileName, outputPath,
                           outputFileNameDict = None,
                           spectralDataSuffix='SPC', reportProgress=True      ,
                           nf=128                  , df=0.009765625           ,
