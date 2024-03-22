@@ -407,6 +407,7 @@ class Spectrum:
             file.write(header)
             format = '%d, ' * 7 + '%6.2f, ' * 6 + '%6.2f \n'
             for ii in range( 0 , len(hm0)):
+                assert self.time is not None
                 #
                 string = format % ( self.time[ii,0], self.time[ii,1],  self.time[ii,2],
                                     self.time[ii,3],self.time[ii,4],self.time[ii,5],
@@ -622,7 +623,8 @@ def parseLocationFiles(inputFileName, outputFileName='displacement.CSV',
         period_names = ["year", "month", "day", "hour", "minute", "second", "millisecond"]
         for col_i, period in enumerate(period_names[:-1]):
             data.insert(loc=col_i, column=period, value=getattr(data.index, period))
-        data.insert(loc=col_i+1, column="millisecond", value=np.uint32(data.index.microsecond/1000))
+        data.index.microsecond.astype(np.uint32)
+        data.insert(loc=col_i+1, column="millisecond", value=data.index.microsecond.astype(np.uint32))
         data = data.set_index(period_names)
         float_fmt = "%.5e"
         # Convert to meters
@@ -1236,7 +1238,7 @@ def cat( path = None, outputFileName = 'displacement.CSV', Suffix='FLT',
                     # malformed line
                     pass
 
-        return '\n'.join(outlines) + '\n'
+        return [f"{line}\n" for line in outlines]
     #
 
     def modeDetection( path , filename ):
@@ -1286,142 +1288,145 @@ def cat( path = None, outputFileName = 'displacement.CSV', Suffix='FLT',
     
     fname,ext = os.path.splitext(outputFileName)
     outputFileName = fname + '.' + extensions(outputFileType)
-    #
-    if outputFileType.lower()=='gz':
-        #
-        compress=True
-        #
-    else:
-        #
-        compress=False
-        #    
-    #
-    if compress:
-        #
-        outfile = gzip.open(outputFileName,'wb')
-        #
-    else:
-        #
-        outfile = open(outputFileName,'w')
-        #
-    #
-    #    
-    #
-    for index,filename in enumerate(fileNames):
-        #
-        if reportProgress:
-            #
-            print( '- ' + filename + ' (File {} out of {})'.format(
-                index+1, len(fileNames) ) )
-            #
-        #
+
+    class Outfile:
+        def __init__(self, outputFileName, outputFileType):
+            self.path = outputFileName
+            self.compress = outputFileType.lower() == "gz"
+
+        def open(self):
+            self.file = (
+                gzip.open(self.path, "wb") if self.compress else open(outputFileName, "w")
+            )
+
+        def write(self, text):
+            if isinstance(self.file, gzip.GzipFile):
+                self.file.write(text.encode("utf-8"))
+            else:
+                self.file.write(text)
+
+        def writelines(self, lines):
+            for l in lines:
+                self.write(l)
+            
         
-        if Suffix == 'SPC':
-            #
-            ip = 0
-            prevLine = ''
-            mode = modeDetection( path, filename)
-            #
+        def __enter__(self):
+            self.open()
+            return self
+        
+        def __exit__(self, exc_type, exc_value, traceback):
+            self.file.close()
 
-            with open(os.path.join( path,filename) ) as infile:
-                try:        #
-                    #lines = infile.readlines()
-                    ii = 0
-                    line = infile.readline()
-                    #
-                    if index==0:
-                        #
-                        outfile.write(line)
+    with Outfile(outputFileName, outputFileType) as outfile:
+        for index,filename in enumerate(fileNames):
+            #
+            if reportProgress:
+                #
+                print( '- ' + filename + ' (File {} out of {})'.format(
+                    index+1, len(fileNames) ) )
+                #
+            #
+            
+            if Suffix == 'SPC':
+                #
+                ip = 0
+                prevLine = ''
+                mode = modeDetection( path, filename)
+                #
 
-                    for line in infile:
+                with open(os.path.join( path,filename) ) as infile:
+                    try:        #
+                        #lines = infile.readlines()
+                        ii = 0
+                        line = infile.readline()
                         #
-                        # Read the ensemble counter
-                        if (line[0:8]=='SPEC_AVG' or line[0:5]=='SPECA'
-                                 or line[0:8]=='SPECA_CC'):
-                            a,b=find_nth(line, ',', 5)
-                            ii = int(line[b+1 : a])
+                        if index==0:
                             #
+                            outfile.write(line)
 
-                            if mode=='production':
+                        for line in infile:
+                            #
+                            # Read the ensemble counter
+                            if (line[0:8]=='SPEC_AVG' or line[0:5]=='SPECA'
+                                    or line[0:8]=='SPECA_CC'):
+                                a,b=find_nth(line, ',', 5)
+                                ii = int(line[b+1 : a])
                                 #
-                                outfile.write(line)
-                                ip       = ii
-                                #
-                            else:
-                                #
-                                #
-                                # Debug spectral file, contains all averages,
-                                # only need last.
-                                #
-                                if line[0:8]=='SPECA_CC':
+
+                                if mode=='production':
                                     #
                                     outfile.write(line)
-                                    ip = 0
-                                    #
-                                elif ii < ip:
-                                    #
-                                    outfile.write(prevLine)
-                                    ip = 0
+                                    ip       = ii
                                     #
                                 else:
                                     #
-                                    ip       = ii
-                                    prevLine = line
+                                    #
+                                    # Debug spectral file, contains all averages,
+                                    # only need last.
+                                    #
+                                    if line[0:8]=='SPECA_CC':
+                                        #
+                                        outfile.write(line)
+                                        ip = 0
+                                        #
+                                    elif ii < ip:
+                                        #
+                                        outfile.write(prevLine)
+                                        ip = 0
+                                        #
+                                    else:
+                                        #
+                                        ip       = ii
+                                        prevLine = line
+                                        #
+                                    #end if
                                     #
                                 #end if
                                 #
                             #end if
                             #
-                        #end if
+                        #end for line
                         #
-                    #end for line
-                    #
-                except Exception as e:
-                    message = "- ERROR:, file " + os.path.join( path,filename) + " is corrupt"
-                    log_errors(message)
-                    print(message )
-            #end with
-            #
-        else:
-            #
-            # Suffix is not 'SPC'
-            #
-            fqfn = os.path.join(path, filename)
-            with open(fqfn) as infile:
+                    except Exception as e:
+                        message = "- ERROR:, file " + os.path.join( path,filename) + " is corrupt"
+                        log_errors(message)
+                        print(message )
+                #end with
                 #
-                try:
-                    lines = infile.readlines()
-                except:
-                    message = "- ERROR:, file " + os.path.join( path,filename) + " is corrupt"
-                    log_errors(message)
-                    print(message)
-                else:
-                    # if this is the first file of this type, keep the header
-                    # otherwise, drop it
-
-                    if index > 0 and len(lines):
-                        unused_header = lines.pop(0)
-                        
+            else:
+                #
+                # Suffix is not 'SPC'
+                #
+                fqfn = os.path.join(path, filename)
+                with open(fqfn) as infile:
                     #
-                    # If SST file, map millis onto epochs
-                    if Suffix == 'SST':
-                        if compatibility_version < 3:
-                            lines = process_sst_lines(lines, fqfn)
-
-                    if compress:
-                        #
-                        lines = [ line.encode('utf-8') for line in lines ]
-                        #
+                    try:
+                        lines = infile.readlines()
+                    except:
+                        message = "- ERROR:, file " + os.path.join( path,filename) + " is corrupt"
+                        log_errors(message)
+                        print(message)
                     else:
+                        # if this is the first file of this type, keep the header
+                        # otherwise, drop it
+
+                        if index > 0 and len(lines):
+                            unused_header = lines.pop(0)
+                            
+                        #
+                        # If SST file, map millis onto epochs
+                        if Suffix == 'SST':
+                            if compatibility_version < 3:
+                                lines = process_sst_lines(lines, fqfn)
+
                         # Strip dos newline char
                         lines = [ line.replace('\r','') for line in lines ]
 
-                    outfile.writelines(lines)
+                        outfile.writelines(lines)
 
+                #
             #
         #
-    #
-    outfile.close()
     return( True )
     #
 #end def
