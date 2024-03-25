@@ -318,7 +318,6 @@ class Spectrum:
 
 
     def _moment(self , values ):
-
         E = self.Szz * values
         jstart =3
         return np.trapz(  E[:,jstart:],self.f[jstart:] ,1  )
@@ -366,9 +365,7 @@ class Spectrum:
 
     def _get_peak_value(self, variable ):
         maxloc = np.argmax( self.Szz,1 )
-
         out = np.zeros( maxloc.shape )
-
         if len(variable.shape) == 2:
             for ii,index in enumerate( maxloc ):
                 out[ii] = variable[ ii,index ]
@@ -409,7 +406,7 @@ class Spectrum:
         dspr  = self.mean_spread()
         pdspr = self.peak_spreading()
 
-        with open(os.path.join( self.outpath,'bulkparameters.csv'),'w') as file:
+        with open(os.path.join(self.outpath, 'bulkparameters.csv'), 'w') as file:
 
             header = "# year , month , day, hour ,min, sec, milisec , Significant Wave Height, Mean Period, Peak Period, Mean Direction, Peak Direction, Mean Spreading, Peak Spreading\n"
             file.write(header)
@@ -1444,6 +1441,3 @@ if __name__ == "__main__":
     else:
         arguments = dict()
     main(**arguments)
-
-
-
