@@ -419,8 +419,16 @@ class Spectrum:
                                     dir[ii],pdir[ii],dspr[ii],pdspr[ii]  )
                 file.write( string )
 
-def main( path = None , outpath=None, outputFileType='CSV',
-          spectra='all',suffixes=None,parsing=None,lfFilter=False,bulkParameters=True):
+def main(
+    path=None,
+    outpath=None,
+    outputFileType='CSV',
+    spectra='all',
+    suffixes=None,
+    parsing=None,
+    lfFilter=False,
+    bulkParameters=True
+):
     """
     Combine selected SPOTTER output files  into CSV files. This
     routine is called by __main__ and that calls in succession the separate
@@ -1225,7 +1233,6 @@ def cat( path = None, outputFileName = 'displacement.CSV', Suffix='FLT',
                         outfile.writelines(lines)
 
     return( True )
-#end def
 
 
 def validCommandLineArgument( arg ):
@@ -1234,7 +1241,7 @@ def validCommandLineArgument( arg ):
     if not (len(out) == 2):
         print('ERROR: Unknown commandline argument: ' + arg)
         sys.exit(1)
-    key,val = out
+    key, val = out
 
     # normalize arg names to the capitalization required by main()
     argnames = list(inspect.signature(main).parameters)
@@ -1245,7 +1252,9 @@ def validCommandLineArgument( arg ):
     else:
         print('ERROR: unknown commandline argument ' + key)
         sys.exit(1)
-    return( key,val)
+    return(key, val)
+
+
 def getVersions( path ):
     """
      This function retrieves sha from sys filenames; if no sha is present
@@ -1353,7 +1362,7 @@ def getVersions( path ):
         version[-1]['fileNumbers'].append( entry )
     #end for filenames
     return version
-#
+
 def filterSOS(versionNumber,IIRWeightType):
     #second order-sections coeficients of the filter
 
@@ -1402,10 +1411,10 @@ def filterSOS(versionNumber,IIRWeightType):
     sos = np.array( sos )
     return sos
 
-def applyfilter( data , kind , versionNumber, IIRWeightType ):
+def applyfilter(data, kind, versionNumber, IIRWeightType):
     # Apply forward/backward/filtfilt sos filter
     # Get SOS coefficients
-    sos = filterSOS( versionNumber,IIRWeightType)
+    sos = filterSOS(versionNumber, IIRWeightType)
     if kind=='backward':
         directions = ['backward']
         #, axis=0
@@ -1418,9 +1427,7 @@ def applyfilter( data , kind , versionNumber, IIRWeightType ):
     for direction in directions:
         if direction=='backward':
             res = np.flip( res, axis=0 )
-
         res = signal.sosfilt(sos, res,axis=0)
-
         if direction=='backward':
             res = np.flip( res, axis=0 )
 
@@ -1429,15 +1436,13 @@ def applyfilter( data , kind , versionNumber, IIRWeightType ):
 First = True
 if __name__ == "__main__":
     # execute only if run as a script
-
-    narg      = len( sys.argv[1:] )
-
-    if narg>0:
+    narg = len( sys.argv[1:] )
+    if narg > 0:
         #parse and check command line arguments
         arguments = dict()
         for argument in sys.argv[1:]:
-            key,val = validCommandLineArgument( argument )
-            arguments[key]=val
+            key, val = validCommandLineArgument(argument)
+            arguments[key] = val
     else:
         arguments = dict()
     main(**arguments)
