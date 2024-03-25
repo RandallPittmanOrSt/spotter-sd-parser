@@ -1317,17 +1317,17 @@ def cat( path = None, outputFileName = 'displacement.CSV', Suffix='FLT',
     if len(fileNames) == 0:
         return(False)
     
-    fname,ext = os.path.splitext(outputFileName)
+    fname = os.path.splitext(outputFileName)[0]
     outputFileName = fname + '.' + extensions(outputFileType)
 
     class Outfile:
         def __init__(self, outputFileName, outputFileType):
             self.path = outputFileName
-            self.compress = outputFileType.lower() == "gz"
+            self.gzip = outputFileType.lower() == "gz"
 
         def open(self):
             self.file = (
-                gzip.open(self.path, "wb") if self.compress else open(outputFileName, "w")
+                gzip.open(self.path, "wb") if self.gzip else open(outputFileName, "w")
             )
 
         def write(self, text):
@@ -1339,12 +1339,11 @@ def cat( path = None, outputFileName = 'displacement.CSV', Suffix='FLT',
         def writelines(self, lines):
             for l in lines:
                 self.write(l)
-            
-        
+
         def __enter__(self):
             self.open()
             return self
-        
+
         def __exit__(self, exc_type, exc_value, traceback):
             self.file.close()
 
