@@ -556,7 +556,7 @@ def parseLocationFiles(inputFileName, outputFileName='displacement.CSV',
     (*outputFileName*).
     """
 
-    fname,ext = os.path.splitext(outputFileName)
+    fname = os.path.splitext(outputFileName)[0]
     outputFileName = fname + '.' + extensions(outputFileType)
 
 
