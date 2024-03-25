@@ -161,7 +161,8 @@ Major Updates:
 #----------------
 #
 from datetime import datetime, timezone
-import fnmatch
+from itertools import chain
+from pathlib import Path
 import gzip
 import inspect
 import os
@@ -208,7 +209,16 @@ defaultIIRWeightType = 0
 #
 applyPhaseCorrection                  = True
 applyPhaseCorrectionFromVersionNumber = 2
-    
+
+
+def floatable(v):
+    """Check if v can be converted to a float"""
+    try:
+        v = float(v)
+    except ValueError:
+        return False
+    return True
+
 
 class Spectrum:
     _parser_files = {'Szz':'Szz.csv', 'a1':'a1.csv', 'b1':'b1.csv','Sxx':'Sxx.csv','Syy':'Syy.csv','Qxz':'Qxz.csv','Qyz':'Qyz.csv'}
@@ -1096,33 +1106,25 @@ def getFileNames( path , suffix , message,versionFileList=None ):
     # match the Spotter output filename signature
     #
 
+    # initial file list is all filenames of the given suffix sorted by number
+    initial_fileNames = [
+        p.name for p in sorted(
+            chain.from_iterable(
+                Path(path).glob(f"*_{suffix}.{ext}") for ext in ["CSV", "csv", "log"]
+            ),
+            key=lambda f: int(f.name.split("_")[0]),
+        )
+    ]
+
     if versionFileList is not None:
-        #
         # Only add filenames that are in the present version file number list
-        #
-        fileNames = []
-        for filename in sorted(os.listdir(path)):
-            #
-            if (fnmatch.fnmatch(filename, '????_' + suffix + '.CSV') or
-                fnmatch.fnmatch(filename, '????_' + suffix + '.csv') or
-                fnmatch.fnmatch(filename, '????_' + suffix + '.log')):
-                #
-                num , ___ = filename.split('_')
-                num = num.strip()
-                if num in versionFileList:
-                    #
-                    fileNames.append(filename)
-                    #
-                #
-            #
-        #
+        fileNames = [
+            filename
+            for filename in initial_fileNames
+            if filename.split('_')[0].strip() in versionFileList
+        ]
     else:
-        #
-        fileNames =  [ filename for filename in sorted(os.listdir(path))
-                       if
-                       (fnmatch.fnmatch(filename, '????_' + suffix + '.CSV') or
-                        fnmatch.fnmatch(filename, '????_' + suffix + '.csv') or
-                        fnmatch.fnmatch(filename, '????_' + suffix + '.log'))]
+        fileNames =  initial_fileNames
     #
     # Are there valid Spotter files?
     #    
