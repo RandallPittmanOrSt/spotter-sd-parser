@@ -1235,30 +1235,6 @@ def cat( path = None, outputFileName = 'displacement.CSV', Suffix='FLT',
     return( True )
 
 
-def validCommandLineArgument( arg ):
-    out = arg.split('=')
-
-    if not (len(out) == 2):
-        print('ERROR: Unknown commandline argument: ' + arg)
-        sys.exit(1)
-    key, val = out
-
-    # normalize arg names to the capitalization required by main()
-    argnames = list(inspect.signature(main).parameters)
-    for argname in argnames:
-        if key.lower() == argname.lower():
-            key = argname
-            break
-    else:
-        print('ERROR: unknown commandline argument ' + key)
-        sys.exit(1)
-    if key == "suffixes":
-        # Make suffixes into a list
-        val = val.replace("[", "").replace("]", "")
-        val = [val]
-    return(key, val)
-
-
 def getVersions( path ):
     """
      This function retrieves sha from sys filenames; if no sha is present
@@ -1436,6 +1412,30 @@ def applyfilter(data, kind, versionNumber, IIRWeightType):
             res = np.flip( res, axis=0 )
 
     return res
+
+def validCommandLineArgument( arg ):
+    out = arg.split('=')
+
+    if not (len(out) == 2):
+        print('ERROR: Unknown commandline argument: ' + arg)
+        sys.exit(1)
+    key, val = out
+
+    # normalize arg names to the capitalization required by main()
+    argnames = list(inspect.signature(main).parameters)
+    for argname in argnames:
+        if key.lower() == argname.lower():
+            key = argname
+            break
+    else:
+        print('ERROR: unknown commandline argument ' + key)
+        sys.exit(1)
+    if key == "suffixes":
+        # Make suffixes into a list
+        val = val.replace("[", "").replace("]", "")
+        val = [val]
+    return(key, val)
+
 
 First = True
 if __name__ == "__main__":
