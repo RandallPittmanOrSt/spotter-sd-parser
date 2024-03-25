@@ -166,6 +166,7 @@ from pathlib import Path
 import gzip
 import inspect
 import os
+import re
 import sys
 import time
 
@@ -1107,13 +1108,15 @@ def getFileNames( path , suffix , message,versionFileList=None ):
     #
 
     # initial file list is all filenames of the given suffix sorted by number
+    exts = ["CSV", "csv", "log"]
+    name_re = re.compile(r"\d+_[A-Z]{3}\.[A-Za-z]{3}")
     initial_fileNames = [
         p.name for p in sorted(
             chain.from_iterable(
-                Path(path).glob(f"*_{suffix}.{ext}") for ext in ["CSV", "csv", "log"]
+                Path(path).glob(f"*_{suffix}.{ext}") for ext in exts
             ),
             key=lambda f: int(f.name.split("_")[0]),
-        )
+        ) if name_re.match(p.name)
     ]
 
     if versionFileList is not None:
