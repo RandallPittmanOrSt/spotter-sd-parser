@@ -1241,6 +1241,32 @@ def cat( path = None, outputFileName = 'displacement.CSV', Suffix='FLT',
         return [f"{line}\n" for line in outlines]
     #
 
+    def process_SMD_lines(lines, generator=True):
+        def iszero(v):
+            return floatable(v) and float(v) == 0
+        def lineitems(line):
+            return line.split(",")
+        def firstitem(line):
+            return lineitems(line)[0]
+        def toomany_items(line):
+            items = lineitems(line)
+            return len(items) > 3 and items[3] == "RBRDT" and len(items) > 7
+        def sortval(line):
+            try:
+                return float(firstitem(line))
+            except ValueError:
+                return 0.0
+        # Get header line, if any
+        header = []
+        if not floatable(firstitem(lines[0])):
+            header = lines[0:1]
+            lines = lines[1:]
+        sorted_lines = sorted(
+            [line for line in lines if not iszero(firstitem(line)) and not toomany_items(line)],
+            key=sortval,
+        )
+        return header + sorted_lines
+
     def modeDetection( path , filename ):
         #
         # Here we detect if we are in debug or in production mode, we do this
@@ -1407,18 +1433,27 @@ def cat( path = None, outputFileName = 'displacement.CSV', Suffix='FLT',
                         log_errors(message)
                         print(message)
                     else:
-                        # if this is the first file of this type, keep the header
-                        # otherwise, drop it
-
-                        if index > 0 and len(lines):
-                            unused_header = lines.pop(0)
-                            
-                        #
+                        if not lines:
+                            continue
+                        header_line = lines.pop(0)
                         # If SST file, map millis onto epochs
                         if Suffix == 'SST':
                             if compatibility_version < 3:
                                 lines = process_sst_lines(lines, fqfn)
+                        if Suffix == "SMD":
+                            # remove SMD lines with epoch 0
+                            lines = process_SMD_lines(lines)
+                        elif os.path.splitext(filename)[1].lower() == ".csv":
+                            # remove any other lines that don't start with a number
+                            lines = [
+                                line
+                                for line in lines
+                                if floatable(line.split(",")[0])
+                            ]
 
+                        # if this is the first file of this type, keep the header
+                        if index == 0:
+                            lines.insert(0, header_line)
                         # Strip dos newline char
                         lines = [ line.replace('\r','') for line in lines ]
 
