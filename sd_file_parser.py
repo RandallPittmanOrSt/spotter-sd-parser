@@ -534,10 +534,6 @@ def main(
             spectrum = Spectrum(path=outpath,outpath=outpath)
             if spectrum.spectral_data_is_available:
                 spectrum.generate_text_file()
-    #Versions
-
-#end def
-
 
 
 def log_errors( error ):
