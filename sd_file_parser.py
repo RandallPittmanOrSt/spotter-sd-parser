@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
-""" 
+"""
 See the NOTICE file distributed with this work for additional
 information regarding copyright ownership.  Sofar Ocean Technologies
 licenses this file to you under the Apache License, Version 2.0 (the
-"License"); you may not use this file except in compliance with the License. 
+"License"); you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
   http://www.apache.org/licenses/LICENSE-2.0
@@ -13,31 +13,31 @@ Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
 License for the specific language governing permissions and limitations
-under the License.  
+under the License.
 """
 
-""" 
+"""
 Purpose:
 
     For efficiency, SPOTTER stores wave spectra, mean location and
-    displacement data on the SD card across multiple files. In order to 
-    access the data for post processing it is convenient to first 
-    recombine each data type in a single file. 
+    displacement data on the SD card across multiple files. In order to
+    access the data for post processing it is convenient to first
+    recombine each data type in a single file.
 
-    This module contains functions to process SPOTTER output files containing 
-    spectra, mean location and displacement information, and concatenate all 
+    This module contains functions to process SPOTTER output files containing
+    spectra, mean location and displacement information, and concatenate all
     files pertaining to a specific data type (e.g. displacements) into a single
-    comma delimited (CSV) file. For example, all displacement information 
+    comma delimited (CSV) file. For example, all displacement information
     (contained in ????_FLT.CSV) is combined as
 
-       (input)                                (output) 
+       (input)                                (output)
     0010_FLT.CSV  -|
     0011_FLT.CSV   |      running script
     0012_FLT.CSV   |           ==== >       displacement.CSV
     ............   |
     000N_FLT.CSV  -|
 
-    and similarly for spectral ( xxxx_SPC.CSV => Szz.csv) and location 
+    and similarly for spectral ( xxxx_SPC.CSV => Szz.csv) and location
     (xxxx_LOC.CSV => location.csv) files. Further, after all spectral files have
     been combined. Bulk parameters (significant wave height, peak periodm etc.) are calculated from the spectral files,
     and stored seperately in bulkparameters.csv
@@ -47,11 +47,11 @@ Purpose:
 Install:
 
     In order to use this script, python (version 2 or 3) needs to be installed
-    on the system (download at: www.python.org). In addition, for functionality 
+    on the system (download at: www.python.org). In addition, for functionality
     the script requires that the following python python modules:
 
         dependencies: pandas, numpy, scipy
-         
+
     These modules can be installed by invoking the python package manager
     (pip) from the command line. For instance, to install pandas you would
     run the package manager from the command line as:
@@ -63,8 +63,8 @@ Install:
 Usage:
 
     To use the module, simply copy the SPOTTER files and this script into the
-    same directory. Subsequently, start a command line terminal, navigate 
-    to the directory containing the files and run the python script from the 
+    same directory. Subsequently, start a command line terminal, navigate
+    to the directory containing the files and run the python script from the
     command line using the python interpreter as:
 
         python sd_file_parser.py
@@ -102,11 +102,11 @@ Output:
         location.csv      :: Average location (lowpass filtered instantaneous
                              location) in terms of latitude and longitude
                              (decimal degrees)
-        displacement.csv  :: Instantaneous displacement from mean location 
+        displacement.csv  :: Instantaneous displacement from mean location
                              along north, east and vertical directions(in meter)
         bulkparameters    :: Bulk wave parameters (Significant wave height, peak period, etc.)
 
-     Data is stored as comma delimited file, where each new line corresponds to 
+     Data is stored as comma delimited file, where each new line corresponds to
      a new datapoint in time, and the individual columns contain different data
      entries (time, latitude, longitude etc.).
 
@@ -119,14 +119,14 @@ Output:
                 |    |    |   |    |   |   |        |    |    |       |     |
                2017,12   ,20 ,0   ,6  ,1  ,300     ,30 , E(0), E(1) , E(2) , .... , E(nf-1)
 
-    The first columns indicate the time (year, month etc.) and dof is the 
-    degrees of freedom (dof) used to calculate the spectra. After 
-    the degrees of freedom, each subsequent entry corresponds to the variance 
+    The first columns indicate the time (year, month etc.) and dof is the
+    degrees of freedom (dof) used to calculate the spectra. After
+    the degrees of freedom, each subsequent entry corresponds to the variance
     density at the frequency indicated by the header line (E0 is the energy in
     the mean, E1 at the first frequency f1 etc). The Spotter records
     at an equidistant spectral resolution of df=0.009765625 and there are
     nf=128 spectral entries, given by f(j) = df * j (with 0<=j<128). Frequencies are
-    in Hertz, and spectral entries are given in squared meters per Hz (m^2/Hz) or 
+    in Hertz, and spectral entries are given in squared meters per Hz (m^2/Hz) or
     are dimensionless (for the directional moments a1,a2,b1,b2).
 
     The bulk parameter (bulkparameters.csv) file starts with a header line
@@ -169,6 +169,7 @@ import os
 import re
 import sys
 import time
+from typing import Dict
 
 import numpy as np
 import pandas as pd
@@ -231,7 +232,7 @@ class Spectrum:
         self._file_available = {'Szz':False, 'a1':False, 'b1':False,}
         self.path = path
         self.outpath = outpath
-        self._data = {'Szz':None,'a1':None,'b1':None,'Sxx':None,'Syy':None,'Qxy':None,'Qyz':None}
+        self._data: Dict[str, np.ndarray] = {'Szz':None,'a1':None,'b1':None,'Sxx':None,'Syy':None,'Qxy':None,'Qyz':None} # type: ignore
         self._none = None
         self.time  = None
         for key in self._parser_files:
@@ -431,15 +432,24 @@ class Spectrum:
 
 def main( path = None , outpath=None, outputFileType='CSV',
           spectra='all',suffixes=None,parsing=None,lfFilter=False,bulkParameters=True):
-    """ 
-    Combine selected SPOTTER output files  into CSV files. This 
-    routine is called by __main__ and that calls in succession the separate 
-    routines to concatenate, and parse files. 
+    """
+    Combine selected SPOTTER output files  into CSV files. This
+    routine is called by __main__ and that calls in succession the separate
+    routines to concatenate, and parse files.
+
+    Inputs
+    ------
+    path : str
+        Path to a directory containing the Spotter data SD card data files
+    outpath : str
+        Path to a directory in which the concatenated and processed data should be saved
+    outputFileType : str
+        CSV is the default.
     """
 
     #Check the version of Files
     versions =  getVersions( path )
-    
+
     #The filetypes to concatenate
     if suffixes is None:
         #
@@ -451,7 +461,7 @@ def main( path = None , outpath=None, outputFileType='CSV',
         parsing=['FLT','SPC','LOC','SST']
         #
     #
-        
+
     outFiles    = {'FLT':'displacement','SPC':'spectra','SYS':'system',
                    'LOC':'location','GPS':'gps','SST':'sst','SMD':'smartmooring_data',
                    'BARO':'barometer'}
@@ -465,8 +475,8 @@ def main( path = None , outpath=None, outputFileType='CSV',
     else:
         #
         path = os.path.abspath(path)
-        #    
-    
+        #
+
     if (outpath is None):
         #
         outpath = path
@@ -509,21 +519,21 @@ def main( path = None , outpath=None, outputFileType='CSV',
             outpath = os.path.join( outp,str(index) )
             #
         else:
-            #            
+            #
             outpath = outp
             #
         #
-            
+
         if not os.path.exists(outpath):
             #
             os.makedirs(outpath)
             #
-        #            
-        
+        #
+
         for suffix  in suffixes:
             #
             fileName = os.path.join( outpath , outFiles[suffix] + '.csv' )
-            # 
+            #
             # For each filetype, concatenate files to intermediate CSV files...
 
             print( 'Concatenating all ' + suffix + ' files:')
@@ -536,7 +546,7 @@ def main( path = None , outpath=None, outputFileType='CSV',
                 continue
                 #
             #
-            
+
             #
             # ... once concatenated, process files further (if appropriate)
             #
@@ -544,7 +554,7 @@ def main( path = None , outpath=None, outputFileType='CSV',
                 #
                 if suffix in ['FLT','LOC','GPS','SST']:
                     #
-                    #parse the mean location/displacement files; 
+                    #parse the mean location/displacement files;
                     #this step transforms unix epoch to date string.
                     #
                     parseLocationFiles(inputFileName = fileName,kind=suffix,
@@ -555,8 +565,8 @@ def main( path = None , outpath=None, outputFileType='CSV',
                     #
                 elif suffix in ['SPC']:
                     #
-                    #parse the mean location/displacement files; this step 
-                    #extract relevant spectra (Szz, Sxx etc.) from the bulk 
+                    #parse the mean location/displacement files; this step
+                    #extract relevant spectra (Szz, Sxx etc.) from the bulk
                     #spectral file
                     parseSpectralFiles(inputFileName = fileName,
                                 outputPath=outpath,
@@ -598,14 +608,14 @@ def parseLocationFiles(inputFileName, outputFileName='displacement.CSV',
         versionNumber=defaultVersion,IIRWeightType=defaultIIRWeightType ):
     """
     This functions loads all the gps-location data (located at *path*) from
-    a Spotter into one datastructure and saves the result as a CSV file 
+    a Spotter into one datastructure and saves the result as a CSV file
     (*outputFileName*).
     """
     #
 
     fname,ext = os.path.splitext(outputFileName)
     outputFileName = fname + '.' + extensions(outputFileType)
-    
+
 
     #
     # Load location data into a pandas dataframe object
@@ -613,7 +623,7 @@ def parseLocationFiles(inputFileName, outputFileName='displacement.CSV',
         #
         print(f"Processing Spotter displacement output - {kind}")
         #
-    #        
+    #
 
     #
     header = 'year,month,day,hour,min,sec,msec'
@@ -652,7 +662,7 @@ def parseLocationFiles(inputFileName, outputFileName='displacement.CSV',
                 data[colname] = applyfilter(
                     data[colname], "backward", versionNumber, IIRWeightType
                 )
-            #        
+            #
         fmt = '%i,'*7  + '%.5e,%.5e,%.5e'
         header=header+', x (m), y(m), z(m)'
         data.to_csv(outputFileName, float_format=float_fmt)
@@ -687,13 +697,13 @@ def parseLocationFiles(inputFileName, outputFileName='displacement.CSV',
 
         data[:,1]  = data[:,1] + data[:,2] / 6000000.
         data[:,2]  = data[:,3] + data[:,4] / 6000000.
-        data = np.concatenate( ( data[:,1:3] , data[:,5:] ), axis=1 ) 
+        data = np.concatenate( ( data[:,1:3] , data[:,5:] ), axis=1 )
         data        = np.concatenate( (datetime,data) , axis=1 )
 
         fmt = '%i,'*7 +'%13.8f' * 5 + '%13.8f'
         header=header+', latitude (decimal degrees),longitude (decimal ' + \
             'degrees),elevation (m),SOG (mm/s),COG (deg*1000),Vert Vel (mm/s)'
-        #        
+        #
         #
     else:
         #
@@ -741,13 +751,13 @@ def parseLocationFiles(inputFileName, outputFileName='displacement.CSV',
                      'elevation':data[:,9].astype(np.float32),
                      'sog':data[:,10].astype(np.float32),
                      'cog':data[:,11].astype(np.float32),
-                     'w':data[:,12].astype(np.float32),                     
-                     'time':data[:,0:7].astype(np.int16)} )                
+                     'w':data[:,12].astype(np.float32),
+                     'time':data[:,0:7].astype(np.int16)} )
             else:
                 io.savemat( outputFileName ,
                     {'Lat':data[:,7].astype(np.float32),
                      'Lon':data[:,8].astype(np.float32),
-                  'time':data[:,0:7].astype(np.int16)} )                
+                  'time':data[:,0:7].astype(np.int16)} )
             #
         except ImportError:
             #
@@ -792,12 +802,12 @@ def _filter_bogus_epochs(data: pd.DataFrame) -> pd.DataFrame:
 
 def epochToDateArray( epochtime ):
     #
-    
+
     datetime   = np.array( [ list(time.gmtime(x))[0:6] for x in epochtime ])
     milis      = np.array( [ ( 1000 * (  x-np.floor(x) ) ) for x in epochtime ])
     return(np.concatenate( (datetime,milis[:,None]),axis=1))
 #
-    
+
 
 def parseSpectralFiles(   inputFileName, outputPath,
                           outputFileNameDict = None,
@@ -811,7 +821,7 @@ def parseSpectralFiles(   inputFileName, outputPath,
     # a Spotter into one datastructure and saves the result as a CSV file
     # (*outputFileName*).
     #
-    
+
     def checkKeyNames(key,errorLocation):
         # Nested function to make sure input is insensitive to capitals,
         # irrelevant permutations (Cxz vs Czx), etc
@@ -820,7 +830,7 @@ def parseSpectralFiles(   inputFileName, outputPath,
         elif key.lower() == 'syy':
             out = 'Syy'
         elif key.lower() == 'sxx':
-            out = 'Sxx'                
+            out = 'Sxx'
         elif key.lower() in ['cxz','czx']:
             out = 'Cxz'
         elif key.lower() in ['qxz','qzx']:
@@ -830,7 +840,7 @@ def parseSpectralFiles(   inputFileName, outputPath,
         elif key.lower() in ['qyz','qzy']:
             out = 'Qyz'
         elif key.lower() in ['cxy','cyx']:
-            out = 'Cxy'                
+            out = 'Cxy'
         elif key.lower() in ['qxy','qyx']:
             out = 'Qxy'
         elif key.lower() in ['a1','b1','a2','b2']:
@@ -845,7 +855,7 @@ def parseSpectralFiles(   inputFileName, outputPath,
                      'Qxy':'Qxy.CSV','Syy':'Syy.CSV','Sxx':'Sxx.CSV',
                      'a1':'a1.CSV','b2':'b2.CSV','b1':'b1.CSV','a2':'a2.CSV'}
 
-    
+
     # Rename output file names for given variables if a dict is given
     if outputFileNameDict is not None:
         #
@@ -863,7 +873,7 @@ def parseSpectralFiles(   inputFileName, outputPath,
         outputFileName[key] = fname + '.' + extensions(outputFileType)
         #
     #
-        
+
     # The output  files given by the script; per defauly only Szz is given, but
     # can be altered by user request
     if outputSpectra is None:
@@ -880,7 +890,7 @@ def parseSpectralFiles(   inputFileName, outputPath,
             outputSpectra[index] = keyName
         #
     #
-    
+
 
     #
     # Load spectral data into a pandas dataframe object
@@ -903,7 +913,7 @@ def parseSpectralFiles(   inputFileName, outputPath,
         #
         # Column order is now:
         #
-        #   type,millis,[0] t0_GPS_Epoch_Time(s), [1] tN_GPS_Epoch_Time(s), 
+        #   type,millis,[0] t0_GPS_Epoch_Time(s), [1] tN_GPS_Epoch_Time(s),
         #   [2] ens_count, [3] Sxx_re, [4] Syy_re, [5] Szz_re,[6] Snn_re,
         #   [7] Sxy_re,[8] Szx_re,[9] Szy_re,[10] Szn_re,[11] Sxx_im,
         #   [12] Syy_im,[13] Szz_im,[14] Snn_im,[15] Sxy_im,[16] Szx_im,
@@ -927,11 +937,11 @@ def parseSpectralFiles(   inputFileName, outputPath,
     tmp = pd.read_csv( inputFileName ,
                 index_col=False , skiprows=[0],  header=None,
                     usecols=tuple(range(2,5+stride*nf)) )
-    
+
     # Ensure the dataframe is numeric, coerce any occurences of bad data
     # (strings etc) to NaN and return a numpy numerica array
     tmp = tmp.apply(pd.to_numeric, errors='coerce').values
-      
+
     datetime    = epochToDateArray(tmp[:,0])
     ensembleNum = tmp[:,2] * 2
     data = {}
@@ -946,7 +956,7 @@ def parseSpectralFiles(   inputFileName, outputPath,
         #
         data[key][:,0:3] = np.nan
         #
-            
+
     # Calculate directional moments from data (if requested). Because these are
     # derived quantities these need to be included in the dataframe a-postiori
     if any( [ x in ['a1','b1','a2','b2'] for x in outputSpectra ] ):
@@ -960,7 +970,7 @@ def parseSpectralFiles(   inputFileName, outputPath,
             data['b1'] = data['Qyz'] / np.sqrt( ( data['Szz'] * (
                 data['Sxx'] + data['Syy'] ) ) )
             data['b2'] = 2. * data['Cxy'] /  (
-                data['Sxx'] + data['Syy'] )                      
+                data['Sxx'] + data['Syy'] )
         #
 
         for key in ['a1','b1','a2','b2']:
@@ -978,7 +988,7 @@ def parseSpectralFiles(   inputFileName, outputPath,
         data = lowFrequencyFilter( data )
         #
     #
-        
+
     for key in data:
         #
         data[key] = np.concatenate( (datetime,
@@ -991,11 +1001,11 @@ def parseSpectralFiles(   inputFileName, outputPath,
     freq = np.array(list( range( 0 , nf ) )) * df
     #
     for f in freq:
-        #        
+        #
         header = header +','+ str(f)
-        #    
+        #
     #
-        
+
     #
     # write data to requested output format
     #
@@ -1010,7 +1020,7 @@ def parseSpectralFiles(   inputFileName, outputPath,
                 np.savetxt(os.path.join( outputPath , outputFileName[key]) ,
                            data[key], fmt=fmt,
                            header=header)
-                #            
+                #
             #
         elif outputFileType.lower()=='matlab':
             #
@@ -1033,7 +1043,7 @@ def parseSpectralFiles(   inputFileName, outputPath,
             #
         elif outputFileType.lower()=='numpy':
             #
-            mat = data[key]         
+            mat = data[key]
             np.savez(os.path.join( outputPath , outputFileName[key]),
                         spec=mat[:,8:].astype(np.float32),
                         time=mat[:,0:7].astype(np.int16),
@@ -1070,7 +1080,7 @@ def lowFrequencyFilter( data ):
         for jj in range( 0 , G.shape[0] ):
             #
             data[ key ][ jj , 0 : I[jj] ] = \
-              data[ key ][ jj , 0 : I[jj] ] * G[jj,0 : I[jj]]           
+              data[ key ][ jj , 0 : I[jj] ] * G[jj,0 : I[jj]]
             #
         #
     #
@@ -1083,7 +1093,7 @@ def getFileNames( path , suffix , message,versionFileList=None ):
     # This function returns all the filenames in a given *path*
     # that conform to ????_YYY.CSV where YYY is given by *suffix*.
     #
-    
+
     if path is None:
         #
         # If no path given, assume current directory
@@ -1096,7 +1106,7 @@ def getFileNames( path , suffix , message,versionFileList=None ):
         #
     #
 
-        
+
     synonyms = [suffix]
     if suffix == 'LOC':
         #
@@ -1130,7 +1140,7 @@ def getFileNames( path , suffix , message,versionFileList=None ):
         fileNames =  initial_fileNames
     #
     # Are there valid Spotter files?
-    #    
+    #
     if len( fileNames ) < 1:
         #
         # No files found; raise exception and exit
@@ -1156,12 +1166,12 @@ def extensions( outputFileType ):
         #
     #
 #
-  
+
 def cat( path = None, outputFileName = 'displacement.CSV', Suffix='FLT',
              reportProgress=True, outputFileType='CSV',versionFileList=None,
             compatibility_version=defaultVersion):
     """
-    This functions concatenates raw csv files with a header. Only for the first 
+    This functions concatenates raw csv files with a header. Only for the first
     file it retains the header. Note that for SPEC files and SST files special
     processing is done. Specifically, for SST files we map the millis timebase
     onto the epochtime base using a relation estimated from the FLT files.
@@ -1277,22 +1287,22 @@ def cat( path = None, outputFileName = 'displacement.CSV', Suffix='FLT',
         # Here we detect if we are in debug or in production mode, we do this
         # based on the first few lines; in debug these will contain either
         # FFT or SPEC, whereas in production only SPECA is encountered
-        
+
         mode = 'production'
         with open(os.path.join( path,filename) ) as infile:
             #
-            jline = 0 
+            jline = 0
             for line in infile:
                 #
                 if ( line[0:3]=='FFT' or line[0:5]=='SPEC,'):
                     mode = 'debug'
                     break
                 jline = jline+1
-                
+
                 if jline>10:
                     break
         return(mode)
-    
+
     def find_nth(haystack, needle, n):
         #
         # Function to find nth and nth-1 occurences of a needle in the haystack
@@ -1308,15 +1318,15 @@ def cat( path = None, outputFileName = 'displacement.CSV', Suffix='FLT',
         return (start,prev)
         #
     #end nested function
-    #        
     #
-    # Get a list of location filenames and the absolute path 
+    #
+    # Get a list of location filenames and the absolute path
     path , fileNames = getFileNames( path=path , suffix=Suffix,
                         message='_'+Suffix,versionFileList=versionFileList )
     #
     if len(fileNames) == 0:
         return(False)
-    
+
     fname = os.path.splitext(outputFileName)[0]
     outputFileName = fname + '.' + extensions(outputFileType)
 
@@ -1356,7 +1366,7 @@ def cat( path = None, outputFileName = 'displacement.CSV', Suffix='FLT',
                     index+1, len(fileNames) ) )
                 #
             #
-            
+
             if Suffix == 'SPC':
                 #
                 ip = 0
@@ -1470,7 +1480,7 @@ def cat( path = None, outputFileName = 'displacement.CSV', Suffix='FLT',
     #
 #end def
 
-    
+
 def validCommandLineArgument( arg ):
     #
     out = arg.split('=')
@@ -1481,7 +1491,7 @@ def validCommandLineArgument( arg ):
         sys.exit(1)
         #
     key,val = out
-    
+
     # normalize arg names to the capitalization required by main()
     argnames = list(inspect.signature(main).parameters)
     for argname in argnames:
@@ -1539,7 +1549,7 @@ def getVersions( path ):
     #
     # Loop over all the _SYS files
     for index,filename in enumerate(fileNames):
-        #        
+        #
         foundSha = False
         foundIIRWeightType = False
         IIRWeightType = defaultIIRWeightType
@@ -1567,8 +1577,8 @@ def getVersions( path ):
         # If we found a SHA, check if it is valid
         if foundSha:
             #
-            # Is it a valid sha? 
-            #                
+            # Is it a valid sha?
+            #
             if not sha in ordinalVersionNumber:
                 #
                 # If not - parse using the latest version
@@ -1587,7 +1597,7 @@ def getVersions( path ):
                              'number':ordinalVersionNumber[sha][1],
                              'IIRWeightType':IIRWeightType,
                              'fileNumbers':[] })
-            first = False            
+            first = False
             #
         elif not foundSha and first:
             #
@@ -1631,7 +1641,7 @@ def getVersions( path ):
                                      'number':ordinalVersionNumber[sha][1],
                                      'IIRWeightType':IIRWeightType,
                                      'fileNumbers':[] })
-                    #                             
+                    #
                 #
             #
         #
@@ -1640,7 +1650,7 @@ def getVersions( path ):
         # Add file log identifier (e.g. 0009_????.csv, with entry = '0009')
         #
         #
-        version[-1]['fileNumbers'].append( entry )                        
+        version[-1]['fileNumbers'].append( entry )
         #
     #end for filenames
     #
@@ -1663,26 +1673,26 @@ def filterSOS(versionNumber,IIRWeightType):
                   'a2':  0.8578089736,
                   'b0': 0.8972684452 ,
                   'b1': -1.7945369122 ,
-                  'b2': 0.8972684291  }             
+                  'b2': 0.8972684291  }
             hp = {'a1':-1.9318795385 ,
                   'a2':0.9385430645 ,
                   'b0':1.0000000000 ,
                   'b1':-1.9999999768 ,
-                  'b2':1.0000000180 }          
+                  'b2':1.0000000180 }
         elif IIRWeightType == 1:
-            #Type B           
+            #Type B
             lp = {'a1': 1.9999999964  ,
                   'a2': 0.9999999964  ,
                   'b0': 0.9430391609  ,
                   'b1': -1.8860783217 ,
-                  'b2': 0.9430391609  }              
+                  'b2': 0.9430391609  }
             hp = {'a1':-1.8828311523,
                   'a2':0.8893254984 ,
                   'b0':1.0000000000 ,
                   'b1':2.0000000000 ,
-                  'b2':1.0000000000 }            
+                  'b2':1.0000000000 }
         elif IIRWeightType == 2:
-            #Type C         
+            #Type C
             lp = {'a1': 1.1375322034,
                   'a2': 0.4141775928,
                   'b0': 0.6012434213 ,
@@ -1692,14 +1702,14 @@ def filterSOS(versionNumber,IIRWeightType):
                   'a2':0.8894088696  ,
                   'b0':1.0000000000 ,
                   'b1':2.0000000000 ,
-                  'b2':1.0000000000 }            
+                  'b2':1.0000000000 }
         #
     #
     sos = [ [ lp['b0'],lp['b1'],lp['b2'],1.000000,lp['a1'],lp['a2'] ],
             [ hp['b0'],hp['b1'],hp['b2'],1.000000,hp['a1'],hp['a2'] ] ]
     sos = np.array( sos )
     return sos
-            
+
 def applyfilter( data , kind , versionNumber, IIRWeightType ):
     #
     # Apply forward/backward/filtfilt sos filter
@@ -1726,7 +1736,7 @@ def applyfilter( data , kind , versionNumber, IIRWeightType ):
             #
             res = np.flip( res, axis=0 )
             #
-    
+
         res = signal.sosfilt(sos, res,axis=0)
 
         if direction=='backward':
@@ -1743,7 +1753,7 @@ if __name__ == "__main__":
     #
 
     narg      = len( sys.argv[1:] )
-    
+
     if narg>0:
         #
         #parse and check command line arguments
@@ -1751,7 +1761,7 @@ if __name__ == "__main__":
         for argument in sys.argv[1:]:
             #
             key,val = validCommandLineArgument( argument )
-            arguments[key]=val            
+            arguments[key]=val
             #
         #
     else:
