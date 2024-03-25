@@ -1252,6 +1252,10 @@ def validCommandLineArgument( arg ):
     else:
         print('ERROR: unknown commandline argument ' + key)
         sys.exit(1)
+    if key == "suffixes":
+        # Make suffixes into a list
+        val = val.replace("[", "").replace("]", "")
+        val = [val]
     return(key, val)
 
 
