@@ -920,7 +920,7 @@ def lowFrequencyFilter( data ):
             data[ key ][ jj , 0 : I[jj] ] = \
               data[ key ][ jj , 0 : I[jj] ] * G[jj,0 : I[jj]]
     return( data )
-#end def
+
 
 def getFileNames( path , suffix , message,versionFileList=None ):
     # This function returns all the filenames in a given *path*
@@ -1343,6 +1343,7 @@ def getVersions( path ):
     #end for filenames
     return version
 
+
 def filterSOS(versionNumber,IIRWeightType):
     #second order-sections coeficients of the filter
 
@@ -1391,6 +1392,7 @@ def filterSOS(versionNumber,IIRWeightType):
     sos = np.array( sos )
     return sos
 
+
 def applyfilter(data, kind, versionNumber, IIRWeightType):
     # Apply forward/backward/filtfilt sos filter
     # Get SOS coefficients
@@ -1412,6 +1414,7 @@ def applyfilter(data, kind, versionNumber, IIRWeightType):
             res = np.flip( res, axis=0 )
 
     return res
+
 
 def validCommandLineArgument( arg ):
     out = arg.split('=')
