@@ -65,7 +65,6 @@ def parseLocationFiles(
             column="millisecond",
             value=data.index.microsecond.astype(np.uint32),
         )
-        data = data.set_index(period_names)
         float_fmt = "%.5e"
 
         colnames = ["outx", "outy", "outz"]
@@ -89,8 +88,9 @@ def parseLocationFiles(
         header = header + ", x(m), y(m), z(m)"
         if outputFileType.lower() in ["csv", "gz"]:
             data.to_csv(outputFileName, float_format=float_fmt)
+            return
         else:
-            data = data.values
+            data = data.to_numpy()
     elif kind == "SST":
         # Read the data using pandas, and convert to numpy
         data = pd.read_csv(inputFileName, index_col=False, usecols=(0, 1))
