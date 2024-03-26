@@ -188,7 +188,18 @@ def main(
     outpath : str
         Path to a directory in which the concatenated and processed data should be saved
     outputFileType : str
-        CSV is the default. Alternatives are matlab, numpy, gz
+        CSV is the default. Alternatives are matlab, numpy, and gz.
+    spectra : str
+        To just output one spectra, specify it. Options are Szz, a1, b1, a2, b2, Sxx, Syy,
+        Qxz, Qyz, Cxy. Default is 'all' for all.
+    suffixes : list of str, optional
+        Suffixes to parse. Default is to parse all.
+    parsing : list of str, optional
+        Suffixes to postprocess. Default is all.
+    lfFilter : bool
+        Should a low-frequency filter be done on the spectral files? Default is False.
+    bulkParameters : bool
+        Should the bulk spectral parameters be calculated? Default is True.
 
     """
 
@@ -284,7 +295,7 @@ def main(
                 spectrum.generate_text_file()
 
 
-def validCommandLineArgument( arg ):
+def validCommandLineArgument(arg: str):
     out = arg.split('=')
 
     if not (len(out) == 2):
@@ -305,6 +316,8 @@ def validCommandLineArgument( arg ):
         # Make into a list
         val = val.replace("[", "").replace("]", "")
         val = [val]
+    elif key in ["lfFilter", "bulkParameters"]:
+        val = val.lower() == "true" or val.lower() == "yes"
     return(key, val)
 
 
