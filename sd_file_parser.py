@@ -160,7 +160,7 @@ import inspect
 import os
 import sys
 
-from cat import cat
+from concat import cat
 from parsing import parseLocationFiles, parseSpectralFiles
 from spectrum import Spectrum
 from versions import getVersions
