@@ -169,17 +169,17 @@ from versions import getVersions
 def main(
     path=None,
     outpath=None,
-    outputFileType='CSV',
-    spectra='all',
+    outputFileType="CSV",
+    spectra="all",
     suffixes=None,
     parsing=None,
     lfFilter=False,
-    bulkParameters=True
+    bulkParameters=True,
 ):
     """
-    Combine selected SPOTTER output files  into CSV files. This
-    routine is called by __main__ and that calls in succession the separate
-    routines to concatenate, and parse files.
+    Combine selected SPOTTER output files  into CSV files. This routine is called by
+    __main__ and that calls in succession the separate routines to concatenate, and parse
+    files.
 
     Inputs
     ------
@@ -203,19 +203,26 @@ def main(
 
     """
 
-    #Check the version of Files
-    versions =  getVersions( path )
+    # Check the version of Files
+    versions = getVersions(path)
 
-    #The filetypes to concatenate
+    # The filetypes to concatenate
     if suffixes is None:
-        suffixes = ['FLT','SPC','SYS','LOC','GPS','SST','SMD','BARO']
+        suffixes = ["FLT", "SPC", "SYS", "LOC", "GPS", "SST", "SMD", "BARO"]
 
     if parsing is None:
-        parsing=['FLT','SPC','LOC','SST']
+        parsing = ["FLT", "SPC", "LOC", "SST"]
 
-    outFiles    = {'FLT':'displacement','SPC':'spectra','SYS':'system',
-                   'LOC':'location','GPS':'gps','SST':'sst','SMD':'smartmooring_data',
-                   'BARO':'barometer'}
+    outFiles = {
+        "FLT": "displacement",
+        "SPC": "spectra",
+        "SYS": "system",
+        "LOC": "location",
+        "GPS": "gps",
+        "SST": "sst",
+        "SMD": "smartmooring_data",
+        "BARO": "barometer",
+    }
 
     if path is None:
         # If no path given, assume current directory
@@ -223,83 +230,92 @@ def main(
     else:
         path = os.path.abspath(path)
 
-    if (outpath is None):
+    if outpath is None:
         outpath = path
     else:
-        outpath =  os.path.abspath(outpath)
+        outpath = os.path.abspath(outpath)
 
-    #Which spectra to process
-    if spectra=='all':
-        outputSpectra = ['Szz','a1','b1','a2','b2','Sxx','Syy','Qxz','Qyz','Cxy']
+    # Which spectra to process
+    if spectra == "all":
+        outputSpectra = ["Szz", "a1", "b1", "a2", "b2", "Sxx", "Syy", "Qxz", "Qyz", "Cxy"]
     else:
         outputSpectra = [spectra]
     # Loop over versions
     outp = outpath
     if len(versions) == 1:
-        # if there is only a single version- we allow all files to be parsed.
-        # this is a clutch to account for the fact that sys files are not
-        # garantueed to be written. In general assuming everything is the
-        # same version seems safe- allowing to parse multiple different
-        # versions is perhaps something we want to stop supporting as it adds
-        # a lot of fragile logic.
-        versions[0]['fileNumbers'] = None
+        # if there is only a single version- we allow all files to be parsed. this is a
+        # clutch to account for the fact that sys files are not garantueed to be written.
+        # In general assuming everything is the same version seems safe- allowing to parse
+        # multiple different versions is perhaps something we want to stop supporting as
+        # it adds a lot of fragile logic.
+        versions[0]["fileNumbers"] = None
 
-    for index,version in enumerate(versions):
+    for index, version in enumerate(versions):
         if len(versions) > 1:
             # When there are multiple conflicting version, we push output
             # to different subdirectories
-            outpath = os.path.join( outp,str(index) )
+            outpath = os.path.join(outp, str(index))
         else:
             outpath = outp
 
         if not os.path.exists(outpath):
             os.makedirs(outpath)
 
-        for suffix  in suffixes:
-            fileName = os.path.join( outpath , outFiles[suffix] + '.csv' )
+        for suffix in suffixes:
+            fileName = os.path.join(outpath, outFiles[suffix] + ".csv")
             # For each filetype, concatenate files to intermediate CSV files...
-            print( 'Concatenating all ' + suffix + ' files:')
-            if not (cat(path=path, outputFileType='CSV',Suffix=suffix,
+            print("Concatenating all " + suffix + " files:")
+            if not (
+                cat(
+                    path=path,
+                    outputFileType="CSV",
+                    Suffix=suffix,
                     outputFileName=fileName,
-                    versionFileList=version['fileNumbers'],
-                    compatibility_version=version['number'])
-                    ):
+                    versionFileList=version["fileNumbers"],
+                    compatibility_version=version["number"],
+                )
+            ):
                 continue
 
             # ... once concatenated, process files further (if appropriate)
             if suffix in parsing:
-                if suffix in ['FLT','LOC','GPS','SST']:
-                    #parse the mean location/displacement files;
-                    #this step transforms unix epoch to date string.
-                    parseLocationFiles(inputFileName = fileName,kind=suffix,
-                            outputFileName = fileName,
-                            outputFileType=outputFileType,
-                            versionNumber=version['number'],
-                            IIRWeightType=version['IIRWeightType'])
-                elif suffix in ['SPC']:
-                    #parse the mean location/displacement files; this step
-                    #extract relevant spectra (Szz, Sxx etc.) from the bulk
-                    #spectral file
-                    parseSpectralFiles(inputFileName = fileName,
-                                outputPath=outpath,
-                                outputFileType=outputFileType,
-                                outputSpectra=outputSpectra,lfFilter=lfFilter,
-                                versionNumber=version['number'])
-                    os.remove( fileName )
-            #parsing
-        #suffix
+                if suffix in ["FLT", "LOC", "GPS", "SST"]:
+                    # parse the mean location/displacement files; this step transforms
+                    # unix epoch to date string.
+                    parseLocationFiles(
+                        inputFileName=fileName,
+                        kind=suffix,
+                        outputFileName=fileName,
+                        outputFileType=outputFileType,
+                        versionNumber=version["number"],
+                        IIRWeightType=version["IIRWeightType"],
+                    )
+                elif suffix in ["SPC"]:
+                    # parse the mean location/displacement files; this step extract
+                    # relevant spectra (Szz, Sxx etc.) from the bulk spectral file
+                    parseSpectralFiles(
+                        inputFileName=fileName,
+                        outputPath=outpath,
+                        outputFileType=outputFileType,
+                        outputSpectra=outputSpectra,
+                        lfFilter=lfFilter,
+                        versionNumber=version["number"],
+                    )
+                    os.remove(fileName)
+            # parsing
+        # suffix
         # Generate bulk parameter file
         if bulkParameters:
-            spectrum = Spectrum(path=outpath,outpath=outpath)
+            spectrum = Spectrum(path=outpath, outpath=outpath)
             if spectrum.spectral_data_is_available:
                 spectrum.generate_text_file()
 
 
 def validCommandLineArgument(arg: str):
-    out = arg.split('=')
+    out = arg.split("=")
 
     if not (len(out) == 2):
-        print('ERROR: Unknown commandline argument: ' + arg)
+        print("ERROR: Unknown commandline argument: " + arg)
         sys.exit(1)
     key, val = out
 
@@ -310,7 +326,7 @@ def validCommandLineArgument(arg: str):
             key = argname
             break
     else:
-        print('ERROR: unknown commandline argument ' + key)
+        print("ERROR: unknown commandline argument " + key)
         sys.exit(1)
     if key in ["suffixes", "parsing"]:
         # Make into a list
@@ -318,14 +334,14 @@ def validCommandLineArgument(arg: str):
         val = [val]
     elif key in ["lfFilter", "bulkParameters"]:
         val = val.lower() == "true" or val.lower() == "yes"
-    return(key, val)
+    return (key, val)
 
 
 if __name__ == "__main__":
     # execute only if run as a script
-    narg = len( sys.argv[1:] )
+    narg = len(sys.argv[1:])
     if narg > 0:
-        #parse and check command line arguments
+        # parse and check command line arguments
         arguments = dict()
         for argument in sys.argv[1:]:
             key, val = validCommandLineArgument(argument)

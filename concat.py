@@ -182,9 +182,7 @@ def get_epoch_to_milis_relation(sst_file):
     def millis_to_epoch(milis_in):
         return int(
             epochs[0]
-            + (milis_in - millis[0])
-            * (epochs[ii] - epochs[0])
-            / (millis[ii] - millis[0])
+            + (milis_in - millis[0]) * (epochs[ii] - epochs[0]) / (millis[ii] - millis[0])
         )
 
     return millis_to_epoch
