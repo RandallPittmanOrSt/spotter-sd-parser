@@ -99,7 +99,7 @@ def cat(
                 with open(fqfn) as infile:
                     try:
                         lines = infile.readlines()
-                    except:
+                    except Exception:
                         log_corrupt_file(os.path.join(path, filename))
                     else:
                         if not lines:
