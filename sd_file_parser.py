@@ -152,23 +152,27 @@ Major Updates:
     P.B.Smit | Oct, 2019 | 1.8.0            | SST Spotter update
     various  | Dec, 2021 | 1.8.0+, 2.0.0+   | Spotter v3 update
 """
+
 import inspect
 import os
 import sys
+from pathlib import Path
+from typing import List, Literal, Optional
 
 from concat import cat
+from filenames import PathLike
 from parsing import parseLocationFiles, parseSpectralFiles
 from spectrum import Spectrum
 from versions import getVersions
 
 
 def main(
-    path=None,
-    outpath=None,
-    outputFileType="CSV",
-    spectra="all",
-    suffixes=None,
-    parsing=None,
+    path: Optional[PathLike] = None,
+    outpath: Optional[PathLike] = None,
+    outputFileType: Literal["CSV", "matlab", "numpy", "gz"] = "CSV",
+    spectra: str = "all",
+    suffixes: Optional[List[str]] = None,
+    parsing: Optional[List[str]] = None,
     lfFilter=False,
     bulkParameters=True,
 ):
@@ -219,25 +223,16 @@ def main(
         "SMD": "smartmooring_data",
         "BARO": "barometer",
     }
-
-    if path is None:
-        # If no path given, assume current directory
-        path = os.getcwd()
-    else:
-        path = os.path.abspath(path)
-
-    if outpath is None:
-        outpath = path
-    else:
-        outpath = os.path.abspath(outpath)
+    # If no path given, assume current directory
+    path = Path(path).absolute() if path else Path().absolute()
+    # If no outpath given, assume same as path
+    outpath = Path(outpath).absolute() if outpath else path
 
     # Which spectra to process
     if spectra == "all":
         outputSpectra = ["Szz", "a1", "b1", "a2", "b2", "Sxx", "Syy", "Qxz", "Qyz", "Cxy"]
     else:
         outputSpectra = [spectra]
-    # Loop over versions
-    outp = outpath
     if len(versions) == 1:
         # if there is only a single version- we allow all files to be parsed. this is a
         # clutch to account for the fact that sys files are not garantueed to be written.
@@ -247,18 +242,11 @@ def main(
         versions[0]["fileNumbers"] = None
 
     for index, version in enumerate(versions):
-        if len(versions) > 1:
-            # When there are multiple conflicting version, we push output
-            # to different subdirectories
-            outpath = os.path.join(outp, str(index))
-        else:
-            outpath = outp
-
-        if not os.path.exists(outpath):
-            os.makedirs(outpath)
+        outd = Path(outpath, str(index)) if len(versions) > 1 else outpath
+        outd.mkdir(parents=True, exist_ok=True)
 
         for suffix in suffixes:
-            fileName = os.path.join(outpath, outFiles[suffix] + ".csv")
+            file_path = outd / f"{outFiles[suffix]}.csv"
             # For each filetype, concatenate files to intermediate CSV files...
             print("Concatenating all " + suffix + " files:")
             if not (
@@ -266,7 +254,7 @@ def main(
                     path=path,
                     outputFileType="CSV",
                     Suffix=suffix,
-                    outputFileName=fileName,
+                    output_file_path=file_path,
                     versionFileList=version["fileNumbers"],
                     compatibility_version=version["number"],
                 )
@@ -279,9 +267,9 @@ def main(
                     # parse the mean location/displacement files; this step transforms
                     # unix epoch to date string.
                     parseLocationFiles(
-                        inputFileName=fileName,
+                        input_file_path=file_path,
                         kind=suffix,
-                        outputFileName=fileName,
+                        output_file_path=file_path,
                         outputFileType=outputFileType,
                         versionNumber=version["number"],
                         IIRWeightType=version["IIRWeightType"],
@@ -290,19 +278,19 @@ def main(
                     # parse the mean location/displacement files; this step extract
                     # relevant spectra (Szz, Sxx etc.) from the bulk spectral file
                     parseSpectralFiles(
-                        inputFileName=fileName,
-                        outputPath=outpath,
+                        inputFileName=file_path,
+                        outputPath=outd,
                         outputFileType=outputFileType,
                         outputSpectra=outputSpectra,
                         lfFilter=lfFilter,
                         versionNumber=version["number"],
                     )
-                    os.remove(fileName)
+                    os.remove(file_path)
             # parsing
         # suffix
         # Generate bulk parameter file
         if bulkParameters:
-            spectrum = Spectrum(path=outpath, outpath=outpath)
+            spectrum = Spectrum(spectra_dir=outd, out_dir=outd)
             if spectrum.spectral_data_is_available:
                 spectrum.generate_text_file()
 

@@ -1,6 +1,4 @@
-import os.path
-
-from filenames import getFileNames
+from filenames import PathLike, getFileNames
 
 #'SHA <-> version-number' relation
 # (note that duel entry for 1.2.5/1.4.2 is due to update glitches)
@@ -67,7 +65,7 @@ defaultVersion = 0
 defaultIIRWeightType = 0
 
 
-def getVersions(path):
+def getVersions(path: PathLike):
     """
     This function retrieves sha from sys filenames; if no sha is present
     within the first 20 lines, it is assumed the previous found sha is
@@ -109,7 +107,7 @@ def getVersions(path):
         foundIIRWeightType = False
         IIRWeightType = defaultIIRWeightType
         # Check if there is a sha in first 80 lines
-        with open(os.path.join(path, filename)) as infile:
+        with open(path / filename) as infile:
             jline = 0
             for line in infile:
                 if "SHA" in line:

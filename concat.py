@@ -1,11 +1,11 @@
 import gzip
-import os.path
+from pathlib import Path
 from typing import List, Tuple
 
 import numpy as np
 import pandas as pd
 
-from filenames import extensions, getFileNames
+from filenames import PathLike, extensions, getFileNames
 from versions import defaultVersion
 
 
@@ -19,8 +19,8 @@ def floatable(v):
 
 
 def cat(
-    path=None,
-    outputFileName="displacement.CSV",
+    path: Path,
+    output_file_path: Path = Path("displacement.CSV"),
     Suffix="FLT",
     reportProgress=True,
     outputFileType="CSV",
@@ -41,10 +41,12 @@ def cat(
     if len(fileNames) == 0:
         return False
 
-    fname = os.path.splitext(outputFileName)[0]
-    outputFileName = fname + "." + extensions(outputFileType)
+    # convert extension to the proper extension of this output file type
+    output_file_path = (
+        output_file_path.parent / f"{output_file_path.name}.{extensions(outputFileType)}"
+    )
 
-    with Outfile(outputFileName, outputFileType) as outfile:
+    with Outfile(output_file_path, outputFileType) as outfile:
         for index, filename in enumerate(fileNames):
             if reportProgress:
                 print(
@@ -58,7 +60,7 @@ def cat(
                 prevLine = ""
                 mode = modeDetection(path, filename)
 
-                with open(os.path.join(path, filename)) as infile:
+                with open(path / filename) as infile:
                     try:  #
                         # lines = infile.readlines()
                         ii = 0
@@ -92,16 +94,16 @@ def cat(
                                         ip = ii
                                         prevLine = line
                     except Exception:
-                        log_corrupt_file(os.path.join(path, filename))
+                        log_corrupt_file(path / filename)
 
             else:
                 # Suffix is not 'SPC'
-                fqfn = os.path.join(path, filename)
+                fqfn = path / filename
                 with open(fqfn) as infile:
                     try:
                         lines = infile.readlines()
                     except Exception:
-                        log_corrupt_file(os.path.join(path, filename))
+                        log_corrupt_file(fqfn)
                     else:
                         if not lines:
                             continue
@@ -113,7 +115,7 @@ def cat(
                         if Suffix == "SMD":
                             # remove SMD lines with epoch 0
                             lines = process_SMD_lines(lines)
-                        elif os.path.splitext(filename)[1].lower() == ".csv":
+                        elif fqfn.suffix.lower() == ".csv":
                             # remove any other lines that don't start with a number
                             lines = [
                                 line for line in lines if floatable(line.split(",")[0])
@@ -131,14 +133,13 @@ def cat(
 
 class Outfile:
     """A wrapper for both regular text file and GZip file I/O"""
+
     def __init__(self, outputFileName, outputFileType):
-        self.path = outputFileName
+        self.path: PathLike = outputFileName
         self.gzip = outputFileType.lower() == "gz"
 
     def open(self):
-        self.file = (
-            gzip.open(self.path, "wb") if self.gzip else open(self.path, "w")
-        )
+        self.file = gzip.open(self.path, "wb") if self.gzip else open(self.path, "w")
 
     def close(self):
         self.file.close()
@@ -161,14 +162,11 @@ class Outfile:
         self.close()
 
 
-def get_epoch_to_milis_relation(sst_file):
+def get_epoch_to_milis_relation(sst_file: Path):
     # This function gets the relation between milis and epoch from the
     # FLT file. This assumes FLT exist, otherwise we get an error
 
-    head, tail = os.path.split(sst_file)
-    tail = tail.replace("SST", "FLT")
-
-    flt_file = os.path.join(head, tail)
+    flt_file = sst_file.parent / sst_file.name.replace("SST", "FLT")
     data = pd.read_csv(flt_file, index_col=False, usecols=(0, 1))
     data = data.apply(pd.to_numeric, errors="coerce")
     data = data.values
@@ -194,7 +192,7 @@ def get_epoch_to_milis_relation(sst_file):
     return millis_to_epoch
 
 
-def process_sst_lines(lines, infile):
+def process_sst_lines(lines, infile: Path):
     # Get the function that maps milis to epochs
     #
     # max int used for roll-over; Spotter millis clock resets after reaching the max
@@ -292,13 +290,13 @@ def process_SMD_lines(lines, generator=True):
     return sorted_lines
 
 
-def modeDetection(path, filename):
+def modeDetection(path: Path, filename: str):
     """Detect if we are in debug or in production mode. We do this based on the first few
     lines; in debug these will contain either FFT or SPEC, whereas in production only
     SPECA is encountered"""
 
     mode = "production"
-    with open(os.path.join(path, filename)) as infile:
+    with open(path / filename) as infile:
         jline = 0
         for line in infile:
             if line[0:3] == "FFT" or line[0:5] == "SPEC,":
@@ -329,6 +327,8 @@ def log_corrupt_file(filepath):
 
 
 First = True
+
+
 def log_errors(error):
     global First
     if First:

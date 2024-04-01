@@ -1,6 +1,6 @@
-import os.path
 import time
 from datetime import datetime, timezone
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -18,8 +18,8 @@ applyPhaseCorrectionFromVersionNumber = 2
 
 
 def parseLocationFiles(
-    inputFileName,
-    outputFileName="displacement.CSV",
+    input_file_path,
+    output_file_path=Path("displacement.CSV"),
     kind="FLT",
     reportProgress=True,
     outputFileType="CSV",
@@ -31,8 +31,9 @@ def parseLocationFiles(
     one datastructure and saves the result as a CSV file (*outputFileName*).
     """
 
-    fname = os.path.splitext(outputFileName)[0]
-    outputFileName = fname + "." + extensions(outputFileType)
+    output_file_path = (
+        output_file_path.parent / f"{output_file_path.name}.{extensions(outputFileType)}"
+    )
 
     # Load location data into a pandas dataframe object
     if reportProgress:
@@ -42,7 +43,7 @@ def parseLocationFiles(
     if kind == "FLT":
         # Read the data using pandas
         data = pd.read_csv(
-            inputFileName,
+            input_file_path,
             skiprows=1,
             header=None,
             names=["epoch_t", "outx", "outy", "outz"],
@@ -62,7 +63,7 @@ def parseLocationFiles(
         data.insert(
             loc=col_i + 1,
             column="millisecond",
-            value=(data.index.microsecond/1000).astype(np.uint32),
+            value=(data.index.microsecond / 1000).astype(np.uint32),
         )
         # Remove the timestamp index now that we're done with it
         data = data.reset_index()
@@ -89,13 +90,15 @@ def parseLocationFiles(
         header = header + ",x(m),y(m),z(m)"
         if outputFileType.lower() in ["csv", "gz"]:
             headers = header.split(",")
-            data.to_csv(outputFileName, float_format="%.5e", header=headers, index=False)  # type: ignore
+            data.to_csv(
+                output_file_path, float_format="%.5e", header=headers, index=False
+            )  # type: ignore
             return
         else:
             data = data.to_numpy()
     elif kind == "SST":
         # Read the data using pandas, and convert to numpy
-        data = pd.read_csv(inputFileName, index_col=False, usecols=(0, 1))
+        data = pd.read_csv(input_file_path, index_col=False, usecols=(0, 1))
         data = data.apply(pd.to_numeric, errors="coerce")
         data = data.values
 
@@ -110,7 +113,7 @@ def parseLocationFiles(
     elif kind == "GPS":
         # DEBUG MODE GPS
         data = pd.read_csv(
-            inputFileName, index_col=False, usecols=(1, 2, 3, 4, 5, 6, 7, 8, 9)
+            input_file_path, index_col=False, usecols=(1, 2, 3, 4, 5, 6, 7, 8, 9)
         )
         data = data.apply(pd.to_numeric, errors="coerce")
         data = data.values
@@ -128,7 +131,7 @@ def parseLocationFiles(
             + ",SOG (mm/s),COG (deg*1000),Vert Vel (mm/s)"
         )
     else:
-        data = pd.read_csv(inputFileName, index_col=False, usecols=(0, 1, 2, 3, 4))
+        data = pd.read_csv(input_file_path, index_col=False, usecols=(0, 1, 2, 3, 4))
         data = data.apply(pd.to_numeric, errors="coerce")
         data = data.values
         msk = np.isnan(data[:, 0])
@@ -144,12 +147,12 @@ def parseLocationFiles(
         header = header + ", latitude (decimal degrees),longitude (decimal degrees)"
 
     if outputFileType.lower() in ["csv", "gz"]:
-        np.savetxt(outputFileName, data, fmt=fmt, header=header)
+        np.savetxt(output_file_path, data, fmt=fmt, header=header)
     elif outputFileType.lower() == "matlab":
         # To save to matlab .mat format we need scipy
         if kind == "FLT":
             io.savemat(
-                outputFileName,
+                output_file_path,
                 {
                     "x": data[:, 7].astype(np.float32),
                     "y": data[:, 8].astype(np.float32),
@@ -159,7 +162,7 @@ def parseLocationFiles(
             )
         elif kind == "GPS":
             io.savemat(
-                outputFileName,
+                output_file_path,
                 {
                     "Lat": data[:, 7].astype(np.float32),
                     "Lon": data[:, 8].astype(np.float32),
@@ -172,7 +175,7 @@ def parseLocationFiles(
             )
         else:
             io.savemat(
-                outputFileName,
+                output_file_path,
                 {
                     "Lat": data[:, 7].astype(np.float32),
                     "Lon": data[:, 8].astype(np.float32),
@@ -182,7 +185,7 @@ def parseLocationFiles(
     elif outputFileType.lower() == "numpy":
         if kind == "FLT":
             np.savez(
-                outputFileName,
+                output_file_path,
                 x=data[:, 7].astype(np.float32),
                 y=data[:, 8].astype(np.float32),
                 z=data[:, 9].astype(np.float32),
@@ -190,7 +193,7 @@ def parseLocationFiles(
             )
         else:
             np.savez(
-                outputFileName,
+                output_file_path,
                 lat=data[:, 7].astype(np.float32),
                 lon=data[:, 8].astype(np.float32),
                 time=data[:, 0:7].astype(np.int16),
@@ -300,7 +303,7 @@ def epochToDateArray(epochtime):
 
 def parseSpectralFiles(
     inputFileName,
-    outputPath,
+    outputPath: Path,
     outputFileNameDict=None,
     spectralDataSuffix="SPC",
     reportProgress=True,
@@ -315,33 +318,18 @@ def parseSpectralFiles(
     # one datastructure and saves the result as a CSV file (*outputFileName*).
 
     def checkKeyNames(key, errorLocation):
-        # Nested function to make sure input is insensitive to capitals, irrelevant
-        # permutations (Cxz vs Czx), etc
-        if key.lower() == "szz":
-            out = "Szz"
-        elif key.lower() == "syy":
-            out = "Syy"
-        elif key.lower() == "sxx":
-            out = "Sxx"
-        elif key.lower() in ["cxz", "czx"]:
-            out = "Cxz"
-        elif key.lower() in ["qxz", "qzx"]:
-            out = "Qxz"
-        elif key.lower() in ["cyz", "czy"]:
-            out = "Cyz"
-        elif key.lower() in ["qyz", "qzy"]:
-            out = "Qyz"
-        elif key.lower() in ["cxy", "cyx"]:
-            out = "Cxy"
-        elif key.lower() in ["qxy", "qyx"]:
-            out = "Qxy"
-        elif key.lower() in ["a1", "b1", "a2", "b2"]:
-            out = key.lower()
-        else:
-            raise Exception("unknown key: " + key + " in " + errorLocation)
-        return out
-
-    # end def
+        """Get proper spectra key name for a key with possibly the wrong case or last two
+        characters transposed."""
+        basic_keys = ["Szz", "Syy", "Sxx", "a1", "b1", "a2", "b2"]
+        swap23_keys = ["Cxz", "Qxz", "Cyz", "Qyz", "Cxy", "Qxy"]
+        for k in basic_keys:
+            if key.lower() == k.lower():
+                return k
+        for k in swap23_keys:
+            swap23 = k[0] + k[2] + k[1]
+            if key.lower() in [k.lower(), swap23.lower()]:
+                return k
+        raise Exception(f"unknown key: {key} in {errorLocation}")
 
     outputFileName = {
         "Szz": "Szz.CSV",
@@ -366,8 +354,8 @@ def parseSpectralFiles(
             outputFileName[keyName] = outputFileNameDict[key]
 
     for key in outputFileName:
-        fname = os.path.splitext(outputFileName[key])[0]
-        outputFileName[key] = fname + "." + extensions(outputFileType)
+        fname = outputFileName[key].split(".")[0]
+        outputFileName[key] = f"{fname}.{extensions(outputFileType)}"
 
     # The output  files given by the script; per defauly only Szz is given, but can be
     # altered by user request
@@ -491,7 +479,7 @@ def parseSpectralFiles(
         if outputFileType.lower() == "csv":
             if outputFileType.lower() in ["csv", "gz"]:
                 np.savetxt(
-                    os.path.join(outputPath, outputFileName[key]),
+                    outputPath / outputFileName[key],
                     data[key],
                     fmt=fmt,
                     header=header,
@@ -500,7 +488,7 @@ def parseSpectralFiles(
             # To save to matlab .mat format we need scipy
             mat = data[key]
             io.savemat(
-                os.path.join(outputPath, outputFileName[key]),
+                outputPath / outputFileName[key],
                 {
                     "spec": mat[:, 8:].astype(np.float32),
                     "time": mat[:, 0:7].astype(np.int16),
@@ -511,7 +499,7 @@ def parseSpectralFiles(
         elif outputFileType.lower() == "numpy":
             mat = data[key]
             np.savez(
-                os.path.join(outputPath, outputFileName[key]),
+                outputPath / outputFileName[key],
                 spec=mat[:, 8:].astype(np.float32),
                 time=mat[:, 0:7].astype(np.int16),
                 frequencies=freq.astype(np.float32),

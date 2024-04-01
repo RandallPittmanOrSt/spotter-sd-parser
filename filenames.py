@@ -1,6 +1,9 @@
 import re
 from itertools import chain
 from pathlib import Path
+from typing import Optional, Union
+
+PathLike = Union[Path, str]
 
 
 def extensions(outputFileType):
@@ -13,15 +16,12 @@ def extensions(outputFileType):
         )
 
 
-def getFileNames(path, suffix, message, versionFileList=None):
+def getFileNames(path: Optional[PathLike], suffix, message, versionFileList=None):
     """This function returns all the filenames in a given *path* that conform to
     [D*]D_YYY.CSV where YYY is given by *suffix*."""
 
-    if path is None:
-        # If no path given, assume current directory
-        path = Path(".")  # cwd
-    else:
-        path = Path(path).absolute()
+    path = Path(path) if path else Path()
+    path = path.absolute()
 
     synonyms = [suffix]
     if suffix == "LOC":

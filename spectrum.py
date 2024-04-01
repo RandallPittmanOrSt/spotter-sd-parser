@@ -1,4 +1,4 @@
-import os.path
+from pathlib import Path
 from typing import Dict, Optional
 
 import numpy as np
@@ -16,14 +16,14 @@ class Spectrum:
     }
     _toDeg = 180.0 / np.pi
 
-    def __init__(self, path, outpath):
+    def __init__(self, spectra_dir: Path, out_dir: Path):
         self._file_available = {
             "Szz": False,
             "a1": False,
             "b1": False,
         }
-        self.path = path
-        self.outpath = outpath
+        self.spectra_dir = spectra_dir
+        self.out_dir = out_dir
         self._data: Dict[str, Optional[np.ndarray]] = {
             "Szz": None,
             "a1": None,
@@ -35,13 +35,13 @@ class Spectrum:
         }  # type: ignore
         self._none = None
         self.time = None
-        for key in self._parser_files:
-            # Check which output from the parser is available
-            if os.path.isfile(os.path.join(self.path, self._parser_files[key])):
-                self._file_available[key] = True
-
-            else:
-                self._file_available[key] = False
+        # Update _file_available for all found _parser_files
+        self._file_available.update(
+            {
+                key: (self.spectra_dir / self._parser_files[key]).is_file()
+                for key in self._parser_files
+            }
+        )
 
         # Load a header file from the spectral data from the parser to get frequencies
         self._load_header()
@@ -94,7 +94,7 @@ class Spectrum:
     def _load_header(self):
         for key in self._parser_files:
             if self._file_available[key]:
-                with open(os.path.join(self.path, self._parser_files[key]), "r") as file:
+                with open(self.spectra_dir / self._parser_files[key], "r") as file:
                     line = file.readline().split(",")[8:]
                     self._frequencies = np.array([float(x) for x in line])
             break
@@ -108,7 +108,7 @@ class Spectrum:
         for key in self._parser_files:
             if self._file_available[key]:
                 data = np.loadtxt(
-                    os.path.join(self.path, self._parser_files[key]), delimiter=","
+                    self.spectra_dir / self._parser_files[key], delimiter=","
                 )
                 self.time = data[:, 0:8]
                 self._data[key] = data[:, 8:]
@@ -209,7 +209,7 @@ class Spectrum:
         dspr = self.mean_spread()
         pdspr = self.peak_spreading()
 
-        with open(os.path.join(self.outpath, "bulkparameters.csv"), "w") as file:
+        with open(self.out_dir / "bulkparameters.csv", "w") as file:
             header = (
                 "# year , month , day, hour ,min, sec, milisec , Significant Wave Height,"
                 " Mean Period, Peak Period, Mean Direction, Peak Direction,"
