@@ -126,7 +126,7 @@ def getVersions(path):
         # If we found a SHA, check if it is valid
         if foundSha:
             # Is it a valid sha?
-            if not sha in ordinalVersionNumber:
+            if sha not in ordinalVersionNumber:
                 # If not - parse using the latest version
                 sha = latestVersion()
 
