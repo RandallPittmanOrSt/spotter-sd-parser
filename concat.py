@@ -43,33 +43,6 @@ def cat(
     fname = os.path.splitext(outputFileName)[0]
     outputFileName = fname + "." + extensions(outputFileType)
 
-    class Outfile:
-        def __init__(self, outputFileName, outputFileType):
-            self.path = outputFileName
-            self.gzip = outputFileType.lower() == "gz"
-
-        def open(self):
-            self.file = (
-                gzip.open(self.path, "wb") if self.gzip else open(outputFileName, "w")
-            )
-
-        def write(self, text):
-            if isinstance(self.file, gzip.GzipFile):
-                self.file.write(text.encode("utf-8"))
-            else:
-                self.file.write(text)
-
-        def writelines(self, lines):
-            for l in lines:
-                self.write(l)
-
-        def __enter__(self):
-            self.open()
-            return self
-
-        def __exit__(self, exc_type, exc_value, traceback):
-            self.file.close()
-
     with Outfile(outputFileName, outputFileType) as outfile:
         for index, filename in enumerate(fileNames):
             if reportProgress:
@@ -153,6 +126,38 @@ def cat(
 
                         outfile.writelines(lines)
     return True
+
+
+class Outfile:
+    """A wrapper for both regular text file and GZip file I/O"""
+    def __init__(self, outputFileName, outputFileType):
+        self.path = outputFileName
+        self.gzip = outputFileType.lower() == "gz"
+
+    def open(self):
+        self.file = (
+            gzip.open(self.path, "wb") if self.gzip else open(self.path, "w")
+        )
+
+    def close(self):
+        self.file.close()
+
+    def write(self, text: str):
+        if isinstance(self.file, gzip.GzipFile):
+            self.file.write(text.encode("utf-8"))
+        else:
+            self.file.write(text)
+
+    def writelines(self, lines: List[str]):
+        for line in lines:
+            self.write(line)
+
+    def __enter__(self):
+        self.open()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
 
 
 def get_epoch_to_milis_relation(sst_file):
