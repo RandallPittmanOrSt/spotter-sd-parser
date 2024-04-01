@@ -55,17 +55,18 @@ def parseLocationFiles(
         data = data.dropna(axis=0, how="any")
         # Convert the epoch time to a datetime, then to separate columns
         data = _filter_bogus_epochs(data)
-        data.index = pd.to_datetime(data.index, unit="s")
+        data.index = pd.to_datetime(data.index, unit="s").rename("timestamp")
         period_names = ["year", "month", "day", "hour", "minute", "second", "millisecond"]
         for col_i, period in enumerate(period_names[:-1]):
             data.insert(loc=col_i, column=period, value=getattr(data.index, period))
-        data.index.microsecond.astype(np.uint32)
         data.insert(
             loc=col_i + 1,
             column="millisecond",
-            value=data.index.microsecond.astype(np.uint32),
+            value=(data.index.microsecond/1000).astype(np.uint32),
         )
-        float_fmt = "%.5e"
+        # Remove the timestamp index now that we're done with it
+        data = data.reset_index()
+        del data["timestamp"]
 
         colnames = ["outx", "outy", "outz"]
         # Convert to meters
@@ -85,9 +86,10 @@ def parseLocationFiles(
                 )
 
         fmt = "%i," * 7 + "%.5e,%.5e,%.5e"
-        header = header + ", x(m), y(m), z(m)"
+        header = header + ",x(m),y(m),z(m)"
         if outputFileType.lower() in ["csv", "gz"]:
-            data.to_csv(outputFileName, float_format=float_fmt)
+            headers = header.split(",")
+            data.to_csv(outputFileName, float_format="%.5e", header=headers, index=False)  # type: ignore
             return
         else:
             data = data.to_numpy()
