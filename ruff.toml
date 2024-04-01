@@ -1,0 +1,5 @@
+line-length = 90
+indent-width = 4
+
+[lint.per-file-ignores]
+"parsing.py" = ["E741"]
