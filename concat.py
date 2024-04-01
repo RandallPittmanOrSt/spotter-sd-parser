@@ -1,5 +1,6 @@
 import gzip
 import os.path
+from typing import List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -237,39 +238,58 @@ def process_sst_lines(lines, infile):
 
 
 def process_SMD_lines(lines, generator=True):
-    def iszero(v):
-        return floatable(v) and float(v) == 0
+    def quote_bsys(items: List[str]) -> List[str]:
+        """Ensure the data portion of BSYS lines is quoted if it contains commas"""
+        if len(items) > 6 and items[2] == "BSYS":
+            last_item = f'"{",".join(items[5:])}"'
+            del items[5:]
+            items.append(last_item)
+        return items
 
-    def lineitems(line):
-        return line.split(",")
-
-    def firstitem(line):
-        return lineitems(line)[0]
-
-    def toomany_items(line):
-        items = lineitems(line)
+    def toomany_rbr_items(items: List[str]):
+        """Detect if the line is an RBRDT line and has too many items (corrupted line)"""
         return len(items) > 3 and items[3] == "RBRDT" and len(items) > 7
 
-    def sortval(line):
+    def sortval(firstitem: str) -> float:
+        """Callable to use for sorting lines by the numeric value of the first item"""
         try:
-            return float(firstitem(line))
+            return float(firstitem)
         except ValueError:
             return 0.0
 
-    # Get header line, if any
-    header = []
-    if not floatable(firstitem(lines[0])):
-        header = lines[0:1]
-        lines = lines[1:]
-    sorted_lines = sorted(
-        [
-            line
-            for line in lines
-            if not iszero(firstitem(line)) and not toomany_items(line)
-        ],
-        key=sortval,
-    )
-    return header + sorted_lines
+    def process_line(line: str) -> Tuple[float, str]:
+        """Process a line from an SMD file.
+
+        Inputs
+        ------
+        line
+            line from an SMD file, newline-terminated
+
+        Returns
+        -------
+        tuple (sort_value, line)
+            sort_value - line timestamp, for sorting. 0.0 if string line, -1 if invalid line
+            line - processed line, newline terminated
+
+        None is returned if the line is to be discarded
+        """
+        items = line.strip().split(",")
+        # Discard extra headers lines lines with unknown time (0.0), lines with too few
+        # items, and corrupt RBR lines
+        if (
+            not floatable(items[0])
+            or len(items) < 5
+            or float(items[0]) == 0.0
+            or toomany_rbr_items(items)
+        ):
+            return (-1, "")
+        items = quote_bsys(items)
+        line = f'{",".join(items)}\n'
+        return sortval(items[0]), line
+
+    sorted_results = sorted((process_line(line) for line in lines), key=lambda r: r[0])
+    sorted_lines = [result[1] for result in sorted_results if result[0] >= 0]
+    return sorted_lines
 
 
 def modeDetection(path, filename):
