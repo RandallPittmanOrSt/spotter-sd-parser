@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 """
 See the NOTICE file distributed with this work for additional
 information regarding copyright ownership.  Sofar Ocean Technologies
@@ -14,9 +13,7 @@ distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
 License for the specific language governing permissions and limitations
 under the License.
-"""
 
-"""
 Purpose:
 
     For efficiency, SPOTTER stores wave spectra, mean location and
@@ -155,7 +152,6 @@ Major Updates:
     P.B.Smit | Oct, 2019 | 1.8.0            | SST Spotter update
     various  | Dec, 2021 | 1.8.0+, 2.0.0+   | Spotter v3 update
 """
-
 import inspect
 import os
 import sys
