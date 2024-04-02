@@ -1,3 +1,4 @@
+from typing import Optional
 from filenames import PathLike, getFileNames
 
 #'SHA <-> version-number' relation
@@ -65,7 +66,7 @@ defaultVersion = 0
 defaultIIRWeightType = 0
 
 
-def getVersions(path: PathLike):
+def getVersions(path: Optional[PathLike]):
     """
     This function retrieves sha from sys filenames; if no sha is present
     within the first 20 lines, it is assumed the previous found sha is

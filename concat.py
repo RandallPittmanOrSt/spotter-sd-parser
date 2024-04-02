@@ -36,7 +36,7 @@ def cat(
 
     # Get a list of location filenames and the absolute path
     path, fileNames = getFileNames(
-        path=path, suffix=Suffix, message="_" + Suffix, versionFileList=versionFileList
+        path=path, suffix=Suffix, message=f"_{Suffix}", versionFileList=versionFileList
     )
     if len(fileNames) == 0:
         return False
@@ -49,11 +49,7 @@ def cat(
     with Outfile(output_file_path, outputFileType) as outfile:
         for index, filename in enumerate(fileNames):
             if reportProgress:
-                print(
-                    "- "
-                    + filename
-                    + " (File {} out of {})".format(index + 1, len(fileNames))
-                )
+                print(f"- {filename} (File {index + 1} of {len(fileNames)})")
 
             if Suffix == "SPC":
                 ip = 0
@@ -227,7 +223,7 @@ def process_sst_lines(lines, infile: Path):
 
                 # Convert to epochtime from mapping
                 epoch = millis_to_epoch(value)
-                outlines.append(str(epoch) + " , " + data[1])
+                outlines.append(f"{epoch} , {data[1]}")
                 previousvalue = value
             else:
                 # malformed line

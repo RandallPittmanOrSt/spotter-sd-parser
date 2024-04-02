@@ -469,8 +469,7 @@ def parseSpectralFiles(
     # construct header for use in CSV
     header = "year,month,day,hour,min,sec,milisec,dof"
     freq = np.array(list(range(0, nf))) * df
-    for f in freq:
-        header = header + "," + str(f)
+    header = f"{header},{','.join(freq)}"
 
     # write data to requested output format
     for key in outputSpectra:

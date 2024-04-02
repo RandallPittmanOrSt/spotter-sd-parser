@@ -12,7 +12,7 @@ def extensions(outputFileType):
         return ext[outputFileType.lower()]
     else:
         raise Exception(
-            "Unknown outputFileType; options are:" + "numpy , matlab , pickle , csv"
+            "Unknown outputFileType; options are: numpy, matlab, pickle, csv"
         )
 
 
@@ -53,5 +53,5 @@ def getFileNames(path: Optional[PathLike], suffix, message, versionFileList=None
     # Are there valid Spotter files?
     if len(fileNames) < 1:
         # No files found; raise exception and exit
-        print("  No " + message + " data files available.")
+        print(f"  No {message} data files available.")
     return (path, fileNames)

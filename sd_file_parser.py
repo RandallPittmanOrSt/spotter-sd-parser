@@ -248,7 +248,7 @@ def main(
         for suffix in suffixes:
             file_path = outd / f"{outFiles[suffix]}.csv"
             # For each filetype, concatenate files to intermediate CSV files...
-            print("Concatenating all " + suffix + " files:")
+            print(f"Concatenating all {suffix} files:")
             if not (
                 cat(
                     path=path,
@@ -299,7 +299,7 @@ def validCommandLineArgument(arg: str):
     out = arg.split("=")
 
     if not (len(out) == 2):
-        print("ERROR: Unknown commandline argument: " + arg)
+        print(f"ERROR: Unknown commandline argument: {arg}")
         sys.exit(1)
     key, val = out
 
@@ -310,7 +310,7 @@ def validCommandLineArgument(arg: str):
             key = argname
             break
     else:
-        print("ERROR: unknown commandline argument " + key)
+        print(f"ERROR: unknown commandline argument {key}")
         sys.exit(1)
     if key in ["suffixes", "parsing"]:
         # Make into a list
