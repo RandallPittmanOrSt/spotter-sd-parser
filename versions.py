@@ -1,4 +1,5 @@
-from typing import Optional
+from typing import Dict, List, Optional
+
 from filenames import PathLike, getFileNames
 
 #'SHA <-> version-number' relation
@@ -101,7 +102,7 @@ def getVersions(path: Optional[PathLike]):
         ]
 
     first = True
-    version = []
+    version: List[Dict] = []
     # Loop over all the _SYS files
     for index, filename in enumerate(fileNames):
         foundSha = False
@@ -116,8 +117,8 @@ def getVersions(path: Optional[PathLike]):
                     sha = sha[-1].strip()
                     foundSha = True
                 elif "iir weight type" in line:
-                    ___, IIRWeightType = line.split(":")
-                    IIRWeightType = int(IIRWeightType.strip())
+                    ___, weight_type = line.split(":")
+                    IIRWeightType = int(weight_type.strip())
                     foundIIRWeightType = True
                 jline += 1
                 if (foundSha and foundIIRWeightType) or jline > 80:

@@ -130,7 +130,7 @@ def cat(
 class Outfile:
     """A wrapper for both regular text file and GZip file I/O"""
 
-    def __init__(self, outputFileName, outputFileType):
+    def __init__(self, outputFileName: PathLike, outputFileType: str):
         self.path: PathLike = outputFileName
         self.gzip = outputFileType.lower() == "gz"
 

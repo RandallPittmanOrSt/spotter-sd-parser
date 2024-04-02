@@ -11,9 +11,7 @@ def extensions(outputFileType):
     if outputFileType.lower() in ext:
         return ext[outputFileType.lower()]
     else:
-        raise Exception(
-            "Unknown outputFileType; options are: numpy, matlab, pickle, csv"
-        )
+        raise Exception("Unknown outputFileType; options are: numpy, matlab, pickle, csv")
 
 
 def getFileNames(path: Optional[PathLike], suffix, message, versionFileList=None):

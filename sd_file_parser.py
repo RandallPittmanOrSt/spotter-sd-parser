@@ -157,7 +157,7 @@ import inspect
 import os
 import sys
 from pathlib import Path
-from typing import List, Literal, Optional
+from typing import Any, List, Literal, Optional
 
 from concat import cat
 from filenames import PathLike
@@ -296,6 +296,8 @@ def main(
 
 
 def validCommandLineArgument(arg: str):
+    key: str
+    val: Any
     out = arg.split("=")
 
     if not (len(out) == 2):

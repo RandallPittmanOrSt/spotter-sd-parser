@@ -91,8 +91,8 @@ def parseLocationFiles(
         if outputFileType.lower() in ["csv", "gz"]:
             headers = header.split(",")
             data.to_csv(
-                output_file_path, float_format="%.5e", header=headers, index=False
-            )  # type: ignore
+                output_file_path, float_format="%.5e", header=headers, index=False  # type: ignore
+            )
             return
         else:
             data = data.to_numpy()
