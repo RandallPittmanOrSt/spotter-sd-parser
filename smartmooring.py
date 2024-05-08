@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 from typing_extensions import TypeAlias
 
-from timestamps import df_dtindex_split
+from timestamps import df_dtindex_to_unix_epoch
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -260,18 +260,18 @@ def write_smd_results(out_dir: PathLike, smd_data: SMDData, outfile_prefix=""):
     out_dir.mkdir(parents=True, exist_ok=True)
     # BSYS
     if not smd_data.bsys.empty:
-        bsys_df, dt_colnames, dt_fmt_specs = df_dtindex_split(smd_data.bsys)
-        bsys_header = ",".join([*dt_colnames, *BSYS_FORMATS.keys()])
-        bsys_formatstr = ",".join([*dt_fmt_specs, *BSYS_FORMATS.values()])
+        bsys_df, _ = df_dtindex_to_unix_epoch(smd_data.bsys, "epoch")
+        bsys_header = ",".join(["epoch", *BSYS_FORMATS.keys()])
+        bsys_formatstr = ",".join([SMD_BASE_FORMATS["epoch"], *BSYS_FORMATS.values()])
         bsys_path = out_dir / f"{outfile_prefix}BSYS.csv"
         np.savetxt(bsys_path, bsys_df.values, fmt=bsys_formatstr, header=bsys_header)
     # modules
     for mod_name in smd_data.modules:
-        mod_df, dt_colnames, dt_fmt_specs = df_dtindex_split(smd_data.modules[mod_name])
-        mod_header = ",".join([*dt_colnames, "link", *MODULES_FORMATS[mod_name].keys()])
+        mod_df, _ = df_dtindex_to_unix_epoch(smd_data.modules[mod_name], "epoch")
+        mod_header = ",".join(["epoch", "link", *MODULES_FORMATS[mod_name].keys()])
         mod_formatstr = ",".join(
             [
-                *dt_fmt_specs,
+                SMD_BASE_FORMATS["epoch"],
                 SMD_BASE_FORMATS["link"],
                 *MODULES_FORMATS[mod_name].values(),
             ]
@@ -280,11 +280,9 @@ def write_smd_results(out_dir: PathLike, smd_data: SMDData, outfile_prefix=""):
         np.savetxt(mod_path, mod_df.values, fmt=mod_formatstr, header=mod_header)
     # other
     if not smd_data.other_sm.empty:
-        other_df, dt_colnames, dt_fmt_specs = df_dtindex_split(smd_data.other_sm)
-        other_header = ",".join([*dt_colnames, "link", "log_type"])
-        other_formatstr = ",".join(
-            [*dt_fmt_specs, SMD_BASE_FORMATS["link"], SMD_BASE_FORMATS["log_type"]]
-        )
+        other_df, _ = df_dtindex_to_unix_epoch(smd_data.other_sm, "epoch")
+        other_header = ",".join(SMD_BASE_FORMATS.keys())
+        other_formatstr = ",".join(SMD_BASE_FORMATS.values())
         other_path = out_dir / f"{outfile_prefix}other.csv"
         np.savetxt(other_path, other_df.values, fmt=other_formatstr, header=other_header)
 
