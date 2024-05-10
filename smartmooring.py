@@ -17,6 +17,8 @@ from typing_extensions import TypeAlias
 
 from timestamps import df_dtindex_to_unix_epoch
 
+SCRIPTNAME = Path(__file__).name
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
@@ -292,19 +294,37 @@ def parse_and_merge_all_SMD_files(smd_dir: PathLike) -> SMDData:
     return _merge_SMD_results(all_smd_data)
 
 
-if __name__ == "__main__":
-    if len(sys.argv) < 3 or sys.argv[1] in ["-h", "--help"]:
-        logger.error(
-            "Usage: %s sm_data_dir sm_out_dir [outfile_prefix]",
-            Path(__file__).name
-        )
-        sys.exit(1)
-    in_dir = Path(sys.argv[1])
-    out_dir = Path(sys.argv[2])
-    if len(sys.argv) > 3:
-        sm_prefix = sys.argv[3]
-    else:
-        sm_prefix = ""
+def cli_err(logger_msg, *logger_args, code: int = 1):
+    """Log an error message and exit."""
+    logger.error(logger_msg, *logger_args)
+    sys.exit(code)
 
+
+def usage_err():
+    cli_err("Usage: %s sm_data_dir [-o sm_out_dir] [-p outfile_prefix]", SCRIPTNAME)
+
+
+def cli():
+    if len(sys.argv) < 2 or sys.argv[1] in ["-h", "--help"]:
+        usage_err()
+    in_dir = Path(sys.argv[1])
+    out_dir = in_dir / "smartmooring"
+    sm_prefix = ""
+    if "-o" in sys.argv:
+        flag_idx = sys.argv.index("-o")
+        if flag_idx + 1 >= len(sys.argv):
+            usage_err()
+        out_dir = Path(sys.argv[flag_idx + 1])
+    if "-p" in sys.argv:
+        flag_idx = sys.argv.index("-p")
+        if flag_idx + 1 >= len(sys.argv):
+            usage_err()
+        sm_prefix = sys.argv[flag_idx + 1]
     merged_smd_data = parse_and_merge_all_SMD_files(in_dir)
     write_smd_results(out_dir, merged_smd_data, sm_prefix)
+
+if __name__ == "__main__":
+    try:
+        cli()
+    except Exception:
+        logger.exception("There was an error running %s.", SCRIPTNAME)
