@@ -5,7 +5,6 @@ import io
 import logging
 import os
 import sys
-import tempfile
 import textwrap
 from collections import defaultdict
 from dataclasses import dataclass
@@ -177,7 +176,7 @@ def _isempty(fobj: io.TextIOWrapper):
 def _parse_SMD_file(smd_path: PathLike) -> SMDData:
     """Parse a *_SMD.csv spotter file and return pandas DataFrames with a datetime
     index"""
-    with tempfile.TemporaryFile(mode="w+") as tmpfile:
+    with io.StringIO() as tmpfile:
         _clean_smd_file(smd_path, tmpfile)
         tmpfile.seek(0)
         if _isempty(tmpfile):
@@ -187,7 +186,6 @@ def _parse_SMD_file(smd_path: PathLike) -> SMDData:
                 tmpfile,
                 names=["epoch_t", "link", "log_type", "data1", "data2", "data3", "data4"],
                 skiprows=1,
-                memory_map=True,
             )
             .set_index("epoch_t")
             .convert_dtypes()
