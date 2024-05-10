@@ -215,6 +215,7 @@ def _parse_SMD_file(smd_path: PathLike) -> SMDData:
             sm_df[(sm_df["log_type"] == "DATA") & (sm_df["data1"] == mod_name)]
             .drop(columns=["log_type", *dropped_colnames])
             .rename(columns=colnames)
+            .dropna(axis=0, how="any")
         )
         mod_df = mod_df.astype(
             {fieldname: type_ for fieldname, type_ in mod_types.items()}
