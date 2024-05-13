@@ -1,20 +1,25 @@
 import logging
+import sys
 import textwrap
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Optional, Union
+from typing import Iterable, NamedTuple, Optional, Union
 
 import pandas as pd
-from typing_extensions import TypeAlias
+
+SCRIPTNAME = Path(__file__).name
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 PathLike = Union[Path, str]
-EpochRange: TypeAlias = tuple[float, float]
+
+class EpochRange(NamedTuple):
+    min: Optional[float]
+    max: Optional[float]
 
 
 def _floatable(v):
@@ -35,11 +40,21 @@ def _int_able(v):
     return True
 
 
-def _read_and_clean_smd_csv(
-    smd_path: PathLike, epoch_range: Optional[EpochRange]
-) -> pd.DataFrame:
+def _read_and_clean_smd_csv(smd_path: PathLike, epoch_range: EpochRange) -> pd.DataFrame:
     """Read a Smart Mooring CSV file into a Pandas DataFrame, including some basic
-    cleaning."""
+    cleaning.
+
+    Parameters
+    ----------
+    smd_path
+        Path to a Smart Mooring CSV file
+    epoch_range
+        Min and max values for the epoch_t (UNIX timestamp)
+
+    Returns
+    -------
+    A Pandas dataframe with columns `epoch_t`, `link`, `log_type`, and `data1..data5`
+    """
     # data5 allows up to two commas within an unquoted BSYS message field
     data_names = [f"data{i+1}" for i in range(5)]
     df = pd.read_csv(
@@ -55,8 +70,10 @@ def _read_and_clean_smd_csv(
         .dropna(axis=0, how="any", subset=("epoch_t", "link", "log_type"))
     )
     df = df[df["epoch_t"] != 0]
-    if epoch_range:
-        df = df[(df["epoch_t"] >= epoch_range[0]) & (df["epoch_t"] <= epoch_range[1])]
+    if epoch_range.min:
+        df = df[df["epoch_t"] >= epoch_range.min]
+    if epoch_range.max:
+        df = df[df["epoch_t"] <= epoch_range.max]
     return df
 
 
@@ -74,6 +91,8 @@ class SMDData:
     other_sm
         DataFrame of any leftover SmartMooring data not in the first two entries
         (e.g. MSD, BIN, and HB messages)
+    filename
+        Optional filename if loaded from a single SMD csv file - just for logging purposes
     """
 
     bsys: pd.DataFrame
@@ -147,6 +166,7 @@ def _preprocess_bsys(bsys_df: pd.DataFrame) -> pd.DataFrame:
     return bsys_df
 
 
+# column names and types for Smart Mooring module messages
 mod_info = {
     "SOFT2": {
         "data2": ("module_ms", int),
@@ -172,6 +192,8 @@ mod_info = {
 
 
 def _preprocess_data_df(data_df: pd.DataFrame, mod_type: str):
+    """Convert a dataframe of DATA messages into a dataframe with just messages from a
+    particular Smart Mooring module, with the proper fields."""
     colnames = {k: v[0] for k, v in mod_info[mod_type].items()}
     coltypes = {v[0]: v[1] for v in mod_info[mod_type].values()}
     dropped_columns = [
@@ -179,7 +201,6 @@ def _preprocess_data_df(data_df: pd.DataFrame, mod_type: str):
         for colname in (f"data{i + 1}" for i in range(3, 5))
         if colname not in colnames
     ]
-
     return (
         data_df.rename(columns=colnames)
         .drop(labels=dropped_columns, axis=1)
@@ -188,9 +209,21 @@ def _preprocess_data_df(data_df: pd.DataFrame, mod_type: str):
     )
 
 
-def _preprocess_smd_file(
-    smd_path: PathLike, epoch_range: Optional[EpochRange] = None
-) -> SMDData:
+def _preprocess_smd_file(smd_path: PathLike, epoch_range: EpochRange) -> SMDData:
+    """Convert a *SMD.csv file into a structure of Pandas dataframes
+
+    Parameters
+    ----------
+    smd_path
+        Path to a Smart Mooring CSV file
+    epoch_range
+        Min and max values for the epoch_t (UNIX timestamp)
+
+    Returns
+    -------
+    SMDData
+        A structure with the BSYS data as well as Smart Mooring individual module data
+    """
     smd_df = _read_and_clean_smd_csv(smd_path, epoch_range=epoch_range)
     smd_data = _split_smd_csv(smd_df)
     smd_data.filename = Path(smd_path).name
@@ -209,9 +242,8 @@ def _preprocess_smd_file(
 
 
 class SMDMerger:
-    def __init__(
-        self, smd_paths: Iterable[Path], epoch_range: Optional[EpochRange] = None
-    ) -> None:
+    """A class to wrap up the merging of a bunch of Smart Mooring data files"""
+    def __init__(self, smd_paths: Iterable[Path], epoch_range: EpochRange) -> None:
         self._smd_paths = smd_paths
         self._merged_smd_data = SMDData.empty()
         self._epoch_range = epoch_range
@@ -244,8 +276,10 @@ class SMDMerger:
     def _sort_merged_data(self):
         logger.info("Sorting merged data.")
         merged = self._merged_smd_data
-        merged.bsys = merged.bsys.sort_values("epoch_t", ignore_index=True)
-        merged.other_sm = merged.other_sm.sort_values("epoch_t", ignore_index=True)
+        if not merged.bsys.empty:
+            merged.bsys = merged.bsys.sort_values("epoch_t", ignore_index=True)
+        if not merged.other_sm.empty:
+            merged.other_sm = merged.other_sm.sort_values("epoch_t", ignore_index=True)
         for mod_type, mod_data in merged.modules.items():
             merged.modules[mod_type] = mod_data.sort_values("epoch_t", ignore_index=True)
 
@@ -268,24 +302,95 @@ class SMDMerger:
         return self._merged_smd_data
 
 
-if __name__ == "__main__":
-    basedir = Path(
-        "/nfs/depot/cce_u1/haller/shared/FIELD_DATA/USACE/2023-2024/SD_card_data"
-    )
-    # smd_path = "/nfs/depot/cce_u1/haller/shared/FIELD_DATA/USACE/2023-2024/SD_card_data/S3_SPOT-30035R/0022_SMD.csv"
-    # smd_path = "/nfs/depot/cce_u1/haller/shared/FIELD_DATA/USACE/2023-2024/SD_card_data/S1_SPOT-1132/0319_SMD.CSV"
-    # smd_path = "/nfs/depot/cce_u1/haller/shared/FIELD_DATA/USACE/2023-2024/SD_card_data/S4_SPOT-30034R/1039_SMD.csv"  # 46M
-    # smd_path = "/nfs/depot/cce_u1/haller/shared/FIELD_DATA/USACE/2023-2024/SD_card_data/S4_SPOT-30034R/11184_SMD.csv"  # 103M
-    # smd_data = _preprocess_smd_file(smd_path)
+def write_merged_smd_data(outdir: Path, merged_smd_data: SMDData):
+    logger.info("Writing merged smartmooring CSVs to %s", outdir)
+    if not outdir.is_dir():
+        outdir.mkdir(parents=True, exist_ok=True)
+    to_csv_kwargs = {"float_format": "%.2f", "index": False}
+    if not merged_smd_data.bsys.empty:
+        bsys_fname = outdir / "BSYS.csv"
+        logger.debug("Writing %s", bsys_fname)
+        merged_smd_data.bsys.to_csv(bsys_fname, **to_csv_kwargs)
+    if not merged_smd_data.other_sm.empty:
+        other_sm_fname = outdir/ "other_sm.csv"
+        logger.debug("Writing %s", other_sm_fname)
+        merged_smd_data.other_sm.to_csv(other_sm_fname, **to_csv_kwargs)
+    for mod_name, mod_data in merged_smd_data.modules.items():
+        mod_fname = outdir / f"{mod_name.upper()}.csv"
+        logger.debug("Writing %s", mod_fname)
+        mod_data.to_csv(mod_fname, **to_csv_kwargs)
 
-    # spotter_dir = basedir / "S1_SPOT-1132"
-    # spotter_dir = basedir / "S2_SPOT-1081"
-    # spotter_dir = basedir / "S3_SPOT-30035R"
-    date_range = ("2023-10-01T00:00:00Z", "2024-04-01T00:00:00Z")
-    epoch_range = (
-        pd.Timestamp(date_range[0]).timestamp(),
-        pd.Timestamp(date_range[1]).timestamp(),
+
+def _cli_err(logger_msg, *logger_args, code: int = 1):
+    """Log an error message and exit."""
+    logger.error(logger_msg, *logger_args)
+    sys.exit(code)
+
+
+def _usage_err():
+    _cli_err(
+        (
+            "Usage:\n"
+            " %s sm_data_dir [-o sm_out_dir] [-n min_datetime] [-x max_datetime]\n"
+            "\n"
+            "min_datetime and/or max_datetime can be any date/time string that can be\n"
+            "interpreted by pandas.Timestamp, like 2024-04-01 or 2023-10-25T00:23:43Z\n"
+            "Naive values are assumed to be UTC."
+        ), SCRIPTNAME
     )
-    spotter_dir = basedir / "S4_SPOT-30034R"
+
+
+def _cli_option(flag: str, argv: list[str]) -> Optional[str]:
+    if flag in argv:
+        flag_idx = argv.index(flag)
+        if flag_idx + 1 >= len(argv):
+            _usage_err()
+        return argv[flag_idx + 1]
+    return None
+
+
+def cli():
+    if len(sys.argv) < 2 or sys.argv[1] in ["-h", "--help"]:
+        _usage_err()
+    spotter_dir = Path(sys.argv[1])
+    out_dir = spotter_dir / "smartmoooring"
+    min_epoch_t = None
+    max_epoch_t = None
+    if opt := _cli_option("-o", sys.argv):
+        out_dir = Path(opt)
+    if opt := _cli_option("-n", sys.argv):
+        min_epoch_t = pd.Timestamp(opt).timestamp()
+    if opt := _cli_option("-x", sys.argv):
+        max_epoch_t = pd.Timestamp(opt).timestamp()
+    epoch_range = EpochRange(min_epoch_t, max_epoch_t)
     smd_paths = [*spotter_dir.glob("*_SMD.csv"), *spotter_dir.glob("*_SMD.CSV")]
-    merged_smd_data = SMDMerger(smd_paths, epoch_range=epoch_range).run(parallel=True)
+    merged_smd_data = SMDMerger(smd_paths, epoch_range).run(parallel=True)
+    write_merged_smd_data(out_dir, merged_smd_data)
+
+
+if __name__ == "__main__":
+    # basedir = Path(
+    #     "/nfs/depot/cce_u1/haller/shared/FIELD_DATA/USACE/2023-2024/SD_card_data"
+    # )
+    # # smd_path = "/nfs/depot/cce_u1/haller/shared/FIELD_DATA/USACE/2023-2024/SD_card_data/S3_SPOT-30035R/0022_SMD.csv"
+    # # smd_path = "/nfs/depot/cce_u1/haller/shared/FIELD_DATA/USACE/2023-2024/SD_card_data/S1_SPOT-1132/0319_SMD.CSV"
+    # # smd_path = "/nfs/depot/cce_u1/haller/shared/FIELD_DATA/USACE/2023-2024/SD_card_data/S4_SPOT-30034R/1039_SMD.csv"  # 46M
+    # # smd_path = "/nfs/depot/cce_u1/haller/shared/FIELD_DATA/USACE/2023-2024/SD_card_data/S4_SPOT-30034R/11184_SMD.csv"  # 103M
+    # # smd_data = _preprocess_smd_file(smd_path)
+
+    # # spotter_dir = basedir / "S1_SPOT-1132"
+    # # spotter_dir = basedir / "S2_SPOT-1081"
+    # # spotter_dir = basedir / "S3_SPOT-30035R"
+    # date_range = ("2023-10-01T00:00:00Z", "2024-04-01T00:00:00Z")
+    # epoch_range = (
+    #     pd.Timestamp(date_range[0]).timestamp(),
+    #     pd.Timestamp(date_range[1]).timestamp(),
+    # )
+    # spotter_dir = basedir / "S4_SPOT-30034R"
+    # smd_paths = [*spotter_dir.glob("*_SMD.csv"), *spotter_dir.glob("*_SMD.CSV")]
+    # merged_smd_data = SMDMerger(smd_paths, epoch_range=epoch_range).run(parallel=True)
+    # write_merged_smd_data(Path("smartmooring"), merged_smd_data)
+    try:
+        cli()
+    except Exception:
+        logger.exception("There was an error running %s", SCRIPTNAME)
