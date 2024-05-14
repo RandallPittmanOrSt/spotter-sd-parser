@@ -17,9 +17,10 @@ logger.setLevel(logging.INFO)
 
 PathLike = Union[Path, str]
 
+
 class EpochRange(NamedTuple):
-    min: Optional[float]
-    max: Optional[float]
+    min: Optional[float] = None
+    max: Optional[float] = None
 
 
 def _floatable(v):
@@ -40,7 +41,9 @@ def _int_able(v):
     return True
 
 
-def _read_and_clean_smd_csv(smd_path: PathLike, epoch_range: EpochRange) -> pd.DataFrame:
+def _read_and_clean_smd_csv(
+    smd_path: PathLike, epoch_range: EpochRange = EpochRange()
+) -> pd.DataFrame:
     """Read a Smart Mooring CSV file into a Pandas DataFrame, including some basic
     cleaning.
 
@@ -198,8 +201,8 @@ def _preprocess_data_df(data_df: pd.DataFrame, mod_type: str):
     coltypes = {v[0]: v[1] for v in mod_info[mod_type].values()}
     dropped_columns = [
         colname
-        for colname in (f"data{i + 1}" for i in range(3, 5))
-        if colname not in colnames
+        for colname in (f"data{i + 1}" for i in range(5))
+        if ((colname in data_df.columns) and (colname not in colnames))
     ]
     return (
         data_df.rename(columns=colnames)
@@ -243,6 +246,7 @@ def _preprocess_smd_file(smd_path: PathLike, epoch_range: EpochRange) -> SMDData
 
 class SMDMerger:
     """A class to wrap up the merging of a bunch of Smart Mooring data files"""
+
     def __init__(self, smd_paths: Iterable[Path], epoch_range: EpochRange) -> None:
         self._smd_paths = smd_paths
         self._merged_smd_data = SMDData.empty()
@@ -312,7 +316,7 @@ def write_merged_smd_data(outdir: Path, merged_smd_data: SMDData):
         logger.debug("Writing %s", bsys_fname)
         merged_smd_data.bsys.to_csv(bsys_fname, **to_csv_kwargs)
     if not merged_smd_data.other_sm.empty:
-        other_sm_fname = outdir/ "other_sm.csv"
+        other_sm_fname = outdir / "other_sm.csv"
         logger.debug("Writing %s", other_sm_fname)
         merged_smd_data.other_sm.to_csv(other_sm_fname, **to_csv_kwargs)
     for mod_name, mod_data in merged_smd_data.modules.items():
@@ -336,7 +340,8 @@ def _usage_err():
             "min_datetime and/or max_datetime can be any date/time string that can be\n"
             "interpreted by pandas.Timestamp, like 2024-04-01 or 2023-10-25T00:23:43Z\n"
             "Naive values are assumed to be UTC."
-        ), SCRIPTNAME
+        ),
+        SCRIPTNAME,
     )
 
 
@@ -353,7 +358,7 @@ def cli():
     if len(sys.argv) < 2 or sys.argv[1] in ["-h", "--help"]:
         _usage_err()
     spotter_dir = Path(sys.argv[1])
-    out_dir = spotter_dir / "smartmoooring"
+    out_dir = spotter_dir / "smartmooring"
     min_epoch_t = None
     max_epoch_t = None
     if opt := _cli_option("-o", sys.argv):
