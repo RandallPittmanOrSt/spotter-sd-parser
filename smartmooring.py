@@ -324,6 +324,7 @@ def cli():
     merged_smd_data = parse_and_merge_all_SMD_files(in_dir)
     write_smd_results(out_dir, merged_smd_data, sm_prefix)
 
+
 if __name__ == "__main__":
     try:
         cli()

@@ -1,4 +1,5 @@
 """Parsing and preprocessing for *_LOC.CSV files"""
+
 import io
 import tempfile
 from pathlib import Path
@@ -14,10 +15,11 @@ LOC_OUT_HEADER_LINE = (
     "latitude (decimal degrees),longitude (decimal degrees)"
 )
 """header line for concatenated LOC file for np.savetxt"""
-LOC_LINE_FORMAT = ",".join(["%d"]*7 + ["%13.8f"]*2)
+LOC_LINE_FORMAT = ",".join(["%d"] * 7 + ["%13.8f"] * 2)
 """field formats for np.savetxt"""
 
 PathLike: TypeAlias = Union[str, Path]
+
 
 def parse_location_file(loc_path: PathLike) -> pd.DataFrame:
     """Parse a *_LOC.csv spotter file and return a pandas dataframe with a datetime index"""
@@ -34,9 +36,15 @@ def parse_location_file(loc_path: PathLike) -> pd.DataFrame:
     loc_df = loc_df.set_index(pd.to_datetime(loc_df["GPS_Epoch_Time(s)"], unit="s"))
     loc_df["latitude"] = loc_df["lat(deg)"] + loc_df["lat(min*1e5)"] / 6000000.0
     loc_df["longitude"] = loc_df["long(deg)"] + loc_df["long(min*1e5)"] / 6000000.0
-    return loc_df.drop(columns=[
-        "GPS_Epoch_Time(s)", "lat(deg)", "lat(min*1e5)", "long(deg)", "long(min*1e5)",
-    ])
+    return loc_df.drop(
+        columns=[
+            "GPS_Epoch_Time(s)",
+            "lat(deg)",
+            "lat(min*1e5)",
+            "long(deg)",
+            "long(min*1e5)",
+        ]
+    )
 
 
 def merge_location_files(loc_dir: PathLike) -> pd.DataFrame:
@@ -106,4 +114,3 @@ def clean_loc_file(loc_path: PathLike, tmpfile: io.TextIOWrapper) -> None:
 #     df = merge_location_files(loc_dir)
 #     df = split_df_tstamp(df)
 #     np.savetxt(loc_out_path, df.values, LOC_FORMATS, header=LOC_OUT_HEADER_LINE)
-

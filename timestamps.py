@@ -2,6 +2,7 @@ import pandas as pd
 
 from typing import Literal
 
+
 def df_dtindex_to_unix_epoch(
     df: pd.DataFrame,
     colname="unix_epoch",
@@ -36,7 +37,7 @@ def df_dtindex_to_unix_epoch(
 
 
 def df_dtindex_split(
-        df: pd.DataFrame
+    df: pd.DataFrame,
 ) -> tuple[pd.DataFrame, tuple[str, ...], tuple[str, ...]]:
     """Use a DataFrame's DatetimeIndex to create integer columns
     "year", "month", "day", "hour", "minute", "second", "millisecond"
@@ -57,12 +58,12 @@ def df_dtindex_split(
     for part in ["year", "month", "day", "hour", "minute", "second", "microsecond"]:
         df[part] = getattr(df.index, part)
     # convert microseconds to milliseconds
-    df["millisecond"] = (df["microsecond"]/1000).astype(int)
+    df["millisecond"] = (df["microsecond"] / 1000).astype(int)
     df = df.drop(columns=["microsecond"])
     # move new columns to the start
     cols = list(df.columns)
     return (
         df[cols[-7:] + cols[:-7]],
         ("year", "month", "day", "hour" "minute", "second", "millisecond"),
-        ("%4d", "%2d", "%2d", "%2d", "%2d", "%2d", "%3d")
+        ("%4d", "%2d", "%2d", "%2d", "%2d", "%2d", "%3d"),
     )
