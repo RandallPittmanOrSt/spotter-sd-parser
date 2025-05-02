@@ -43,7 +43,7 @@ def cat(
 
     # convert extension to the proper extension of this output file type
     output_file_path = (
-        output_file_path.parent / f"{output_file_path.name}.{extensions(outputFileType)}"
+        output_file_path.parent / f"{output_file_path.stem}.{extensions(outputFileType)}"
     )
 
     with Outfile(output_file_path, outputFileType) as outfile:
