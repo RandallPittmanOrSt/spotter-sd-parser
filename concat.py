@@ -148,7 +148,10 @@ class Outfile:
 
     def writelines(self, lines: List[str]):
         for line in lines:
-            self.write(line)
+            if line[-1] == "\n":
+                self.write(line)
+            else:
+                self.write(f"{line}\n")
 
     def __enter__(self):
         self.open()
