@@ -32,7 +32,7 @@ def parseLocationFiles(
     """
 
     output_file_path = (
-        output_file_path.parent / f"{output_file_path.name}.{extensions(outputFileType)}"
+        output_file_path.parent / f"{output_file_path.stem}.{extensions(outputFileType)}"
     )
 
     # Load location data into a pandas dataframe object
