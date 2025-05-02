@@ -29,7 +29,7 @@ def getFileNames(path: Optional[PathLike], suffix, message, versionFileList=None
 
     # initial file list is all filenames of the given suffix sorted by number
     exts = ["CSV", "csv", "log"]
-    name_re = re.compile(r"\d+_\w{3}\.\w{3}")
+    name_re = re.compile(r"\d+_\w{3,4}\.\w{3}")
     initial_fileNames = [
         p.name
         for p in sorted(
