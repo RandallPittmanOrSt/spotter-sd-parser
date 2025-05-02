@@ -148,7 +148,7 @@ def getVersions(path: Optional[PathLike]):
             # this is the first file, but no sha - we will try to continue
             # under the assumption that the version corresponds to the
             # latest version - may lead to problems in older version
-            print("WARNING: Cannot determine version number")
+            print("WARNING: Cannot determine version number from first SYS file.")
             sha = latestVersion()
             version.append(
                 {
