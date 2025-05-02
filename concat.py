@@ -33,7 +33,6 @@ def cat(
     Specifically, for SST files we map the millis timebase onto the epochtime base using a
     relation estimated from the FLT files.
     """
-
     # Get a list of location filenames and the absolute path
     path, fileNames = getFileNames(
         path=path, suffix=Suffix, message=f"_{Suffix}", versionFileList=versionFileList
