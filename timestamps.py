@@ -1,3 +1,6 @@
+"""timestamps.py - Functions that add time-related columns to a dataframe with a
+DatetimeIndex index."""
+
 import pandas as pd
 
 from typing import Literal
@@ -8,7 +11,8 @@ def df_dtindex_to_unix_epoch(
     colname="unix_epoch",
     precision: Literal["s", "ms", "us", "ns"] = "ms",
 ) -> tuple[pd.DataFrame, str]:
-    """Use a DataFrame's DatetimeIndex to create a UNIX epoch column prepended to the DataFrame.
+    """Use a DataFrame's DatetimeIndex to create a UNIX epoch column prepended to the
+    DataFrame.
 
     Inputs
     ------
@@ -53,23 +57,27 @@ def df_dtindex_split(
     Returns
     -------
     df
-        The updated DataFrame (the inde is not modified)
+        The updated DataFrame with the time columns prepended (the index is not modified).
+    colnames
+        The names of the new columns.
     fmt_spec
-        A tuple of format specifiers for use with np.savetxt
+        The format specifiers of the columns for use with np.savetxt.
     """
     if not isinstance(df.index, pd.DatetimeIndex):
         raise TypeError(
             "The dataframe must have a DatetimeIndex index to use this function."
         )
+    # Add time columns to the dataframe
     for part in ["year", "month", "day", "hour", "minute", "second", "microsecond"]:
         df[part] = getattr(df.index, part)
-    # convert microseconds to milliseconds
+    # convert the microseconds column to a milliseconds column
     df["millisecond"] = (df["microsecond"] / 1000).astype(int)
     df = df.drop(columns=["microsecond"])
     # move new columns to the start
     cols = list(df.columns)
+    df = df[cols[-7:] + cols[:-7]]
     return (
-        df[cols[-7:] + cols[:-7]],
-        ("year", "month", "day", "hour" "minute", "second", "millisecond"),
+        df,
+        ("year", "month", "day", "hourminute", "second", "millisecond"),
         ("%4d", "%2d", "%2d", "%2d", "%2d", "%2d", "%3d"),
     )
