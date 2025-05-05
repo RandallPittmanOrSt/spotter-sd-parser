@@ -1,8 +1,10 @@
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import cast
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 from scipy import io, signal
 
@@ -64,7 +66,7 @@ def parseLocationFiles(
         data.insert(
             loc=col_i + 1,
             column="millisecond",
-            value=(data.index.microsecond / 1000).astype(np.uint32),
+            value=(data.index.microsecond / 1000).astype(np.uint32),  # type: ignore  # confusion about datetimeindex
         )
         # Remove the timestamp index now that we're done with it
         data = data.reset_index()
@@ -120,7 +122,7 @@ def parseLocationFiles(
             input_file_path, index_col=False, usecols=(1, 2, 3, 4, 5, 6, 7, 8, 9)
         )
         data = data.apply(pd.to_numeric, errors="coerce")
-        data = data.values
+        data = cast(npt.NDArray[np.floating | np.integer], data.values)
         datetime = epochToDateArray(data[:, 0].tolist())
 
         data[:, 1] = data[:, 1] + data[:, 2] / 6000000.0
