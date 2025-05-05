@@ -1,7 +1,8 @@
 """versions.py - Functions for determining different versions of Spotter firmware."""
 
 from typing import TypedDict
-from filenames import PathLike, getFileNames
+
+from spotter_sd_parser.filenames import PathLike, getFileNames
 
 #'SHA <-> version-number' relation
 # (note that duel entry for 1.2.5/1.4.2 is due to update glitches)

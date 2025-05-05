@@ -8,8 +8,8 @@ import numpy.typing as npt
 import pandas as pd
 from scipy import io, signal
 
-from filenames import filetype2ext
-from versions import defaultIIRWeightType, defaultVersion
+from spotter_sd_parser.filenames import filetype2ext
+from spotter_sd_parser.versions import defaultIIRWeightType, defaultVersion
 
 #
 # Phase correction by applying the IIR to the reversed

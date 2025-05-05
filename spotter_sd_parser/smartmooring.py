@@ -14,7 +14,7 @@ from typing import TypeAlias
 import numpy as np
 import pandas as pd
 
-from timestamps import add_unix_epoch_to_df
+from spotter_sd_parser.timestamps import add_unix_epoch_to_df
 
 SCRIPTNAME = Path(__file__).name
 

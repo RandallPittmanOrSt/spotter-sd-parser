@@ -159,11 +159,11 @@ import sys
 from pathlib import Path
 from typing import Any, Literal
 
-from concat import cat
-from filenames import PathLike
-from parsing import parseLocationFiles, parseSpectralFiles
-from spectrum import Spectrum
-from versions import getVersions
+from spotter_sd_parser.concat import cat
+from spotter_sd_parser.filenames import PathLike
+from spotter_sd_parser.parsing import parseLocationFiles, parseSpectralFiles
+from spotter_sd_parser.spectrum import Spectrum
+from spotter_sd_parser.versions import getVersions
 
 
 def main(

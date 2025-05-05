@@ -4,8 +4,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from filenames import PathLike, filetype2ext, getFileNames
-from versions import defaultVersion
+from spotter_sd_parser.filenames import PathLike, filetype2ext, getFileNames
+from spotter_sd_parser.versions import defaultVersion
 
 
 def floatable(v):
