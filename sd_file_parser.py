@@ -157,7 +157,7 @@ import inspect
 import os
 import sys
 from pathlib import Path
-from typing import Any, List, Literal, Optional
+from typing import Any, Literal
 
 from concat import cat
 from filenames import PathLike
@@ -167,12 +167,12 @@ from versions import getVersions
 
 
 def main(
-    path: Optional[PathLike] = None,
-    outpath: Optional[PathLike] = None,
+    path: PathLike | None = None,
+    outpath: PathLike | None = None,
     outputFileType: Literal["CSV", "matlab", "numpy", "gz"] = "CSV",
     spectra: str = "all",
-    suffixes: Optional[List[str]] = None,
-    parsing: Optional[List[str]] = None,
+    suffixes: list[str] | None = None,
+    parsing: list[str] | None = None,
     lfFilter=False,
     bulkParameters=True,
 ):

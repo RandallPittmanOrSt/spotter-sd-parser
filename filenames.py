@@ -1,9 +1,9 @@
 import re
 from itertools import chain
 from pathlib import Path
-from typing import Optional, Union
+from typing import TypeAlias
 
-PathLike = Union[Path, str]
+PathLike: TypeAlias = str | Path
 
 
 def extensions(outputFileType):
@@ -14,7 +14,7 @@ def extensions(outputFileType):
         raise Exception("Unknown outputFileType; options are: numpy, matlab, pickle, csv")
 
 
-def getFileNames(path: Optional[PathLike], suffix, message, versionFileList=None):
+def getFileNames(path: str | Path | None, suffix, message, versionFileList=None):
     """This function returns all the filenames in a given *path* that conform to
     [D*]D_YYY.CSV where YYY is given by *suffix*."""
 

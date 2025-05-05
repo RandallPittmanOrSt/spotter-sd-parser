@@ -5,7 +5,7 @@ from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, NamedTuple, Optional, Union
+from typing import Iterable, NamedTuple
 
 import pandas as pd
 
@@ -15,12 +15,12 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
-PathLike = Union[Path, str]
+PathLike = str | Path
 
 
 class EpochRange(NamedTuple):
-    min: Optional[float] = None
-    max: Optional[float] = None
+    min: float | None = None
+    max: float | None = None
 
 
 def _floatable(v):
@@ -101,7 +101,7 @@ class SMDData:
     bsys: pd.DataFrame
     modules: dict[str, pd.DataFrame]
     other_sm: pd.DataFrame
-    filename: Optional[str] = None
+    filename: str | None = None
 
     @classmethod
     def empty(cls):
@@ -252,7 +252,7 @@ class SMDMerger:
         self._merged_smd_data = SMDData.empty()
         self._epoch_range = epoch_range
 
-    def _get_smd(self, smd_path: Path) -> Optional[SMDData]:
+    def _get_smd(self, smd_path: Path) -> SMDData | None:
         logger.info(
             "Parsing %s: %.2f MiB",
             smd_path.relative_to(smd_path.parent.parent),
@@ -263,7 +263,7 @@ class SMDMerger:
         except Exception as exc:
             logger.error("ERROR with %s: %s", smd_path, exc)
 
-    def _merge_smd(self, smd_data: Optional[SMDData]):
+    def _merge_smd(self, smd_data: SMDData | None):
         if not smd_data:
             return
         logger.info(f"Merging {smd_data.filename}")
@@ -345,7 +345,7 @@ def _usage_err():
     )
 
 
-def _cli_option(flag: str, argv: list[str]) -> Optional[str]:
+def _cli_option(flag: str, argv: list[str]) -> str | None:
     if flag in argv:
         flag_idx = argv.index(flag)
         if flag_idx + 1 >= len(argv):

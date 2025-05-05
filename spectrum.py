@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Dict, Optional
 
 import numpy as np
 
@@ -24,7 +23,7 @@ class Spectrum:
         }
         self.spectra_dir = spectra_dir
         self.out_dir = out_dir
-        self._data: Dict[str, Optional[np.ndarray]] = {
+        self._data: dict[str, np.ndarray | None] = {
             "Szz": None,
             "a1": None,
             "b1": None,

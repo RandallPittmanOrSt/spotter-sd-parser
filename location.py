@@ -3,10 +3,9 @@
 import io
 import tempfile
 from pathlib import Path
-from typing import Union
+from typing import TypeAlias
 
 import pandas as pd
-from typing_extensions import TypeAlias
 
 LOC_IN_HEADER_LINE = "GPS_Epoch_Time(s),lat(deg),lat(min*1e5),long(deg),long(min*1e5)\n"
 """Original header line of LOC files"""
@@ -18,7 +17,7 @@ LOC_OUT_HEADER_LINE = (
 LOC_LINE_FORMAT = ",".join(["%d"] * 7 + ["%13.8f"] * 2)
 """field formats for np.savetxt"""
 
-PathLike: TypeAlias = Union[str, Path]
+PathLike: TypeAlias = str | Path
 
 
 def parse_location_file(loc_path: PathLike) -> pd.DataFrame:

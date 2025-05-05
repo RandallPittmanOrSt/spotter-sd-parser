@@ -1,7 +1,7 @@
 import time
 from pathlib import Path
 from textwrap import indent
-from typing import Dict, NamedTuple
+from typing import NamedTuple
 
 import pandas as pd
 
@@ -106,9 +106,9 @@ def get_loc_data(loc_csv_path: Path) -> pd.DataFrame:
     return df
 
 
-def get_all_sm_data() -> Dict[str, SMData]:
+def get_all_sm_data() -> dict[str, SMData]:
     tstart = time.time()
-    sm_data: Dict[str, SMData] = {}
+    sm_data: dict[str, SMData] = {}
     for spotter_id in spotters:
         sm_path = data_basedir / spotters[spotter_id] / "parsed" / "smartmooring_data.csv"
         print(
@@ -120,9 +120,9 @@ def get_all_sm_data() -> Dict[str, SMData]:
     return sm_data
 
 
-def get_all_loc_data() -> Dict[str, pd.DataFrame]:
+def get_all_loc_data() -> dict[str, pd.DataFrame]:
     tstart = time.time()
-    loc_data: Dict[str, pd.DataFrame] = {}
+    loc_data: dict[str, pd.DataFrame] = {}
     for spotter_id in spotters:
         loc_path = data_basedir / spotters[spotter_id] / "parsed" / "location.csv"
         print(

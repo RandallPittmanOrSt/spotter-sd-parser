@@ -145,7 +145,7 @@ class Outfile:
         else:
             self.file.write(text)
 
-    def writelines(self, lines: List[str]):
+    def writelines(self, lines: list[str]):
         for line in lines:
             if line[-1] == "\n":
                 self.write(line)
@@ -233,8 +233,8 @@ def process_sst_lines(lines, infile: Path):
     return [f"{line}\n" for line in outlines]
 
 
-def process_SMD_lines(lines, generator=True):
-    def quote_bsys(items: List[str]) -> List[str]:
+def process_SMD_lines(lines):
+    def quote_bsys(items: list[str]) -> list[str]:
         """Ensure the data portion of BSYS lines is quoted if it contains commas"""
         if len(items) > 6 and items[2] == "BSYS":
             last_item = f'"{",".join(items[5:])}"'
@@ -242,7 +242,7 @@ def process_SMD_lines(lines, generator=True):
             items.append(last_item)
         return items
 
-    def toomany_rbr_items(items: List[str]):
+    def toomany_rbr_items(items: list[str]):
         """Detect if the line is an RBRDT line and has too many items (corrupted line)"""
         return len(items) > 3 and items[3] == "RBRDT" and len(items) > 7
 
@@ -253,7 +253,7 @@ def process_SMD_lines(lines, generator=True):
         except ValueError:
             return 0.0
 
-    def process_line(line: str) -> Tuple[float, str]:
+    def process_line(line: str) -> tuple[float, str]:
         """Process a line from an SMD file.
 
         Inputs

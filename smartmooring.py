@@ -9,11 +9,10 @@ import textwrap
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Union
+from typing import TypeAlias
 
 import numpy as np
 import pandas as pd
-from typing_extensions import TypeAlias
 
 from timestamps import df_dtindex_to_unix_epoch
 
@@ -23,7 +22,7 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
-PathLike: TypeAlias = Union[str, Path]
+PathLike: TypeAlias = str | Path
 
 #: Original header line of SMD files
 SMD_IN_HEADER_LINE = "epoch,link,log type,data\n"
@@ -124,7 +123,7 @@ def _int_able(v):
     return True
 
 
-def _smd_line_ok(line: str) -> Optional[str]:
+def _smd_line_ok(line: str) -> str | None:
     parts = line.strip().split(",")
     if (
         not _floatable(parts[0])  # if first part is str, then its a header line
