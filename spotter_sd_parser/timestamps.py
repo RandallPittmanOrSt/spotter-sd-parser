@@ -1,9 +1,9 @@
 """timestamps.py - Functions that add time-related columns to a dataframe with a
 DatetimeIndex index."""
 
-import pandas as pd
-
 from typing import Literal
+
+import pandas as pd
 
 
 def add_unix_epoch_to_df(
