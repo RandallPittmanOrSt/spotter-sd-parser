@@ -113,7 +113,7 @@ def get_all_sm_data() -> dict[str, SMData]:
         sm_path = data_basedir / spotters[spotter_id] / "parsed" / "smartmooring_data.csv"
         print(
             f"smartmooring_data.csv for {spotter_id} is"
-            f" {sm_path.stat().st_size/2**20:.1f} MB"
+            f" {sm_path.stat().st_size / 2**20:.1f} MB"
         )
         sm_data[spotter_id] = get_rbr_data_from_sm_df(get_sm_df(sm_path, True))
     print(f"Overall time to get smartmooring data: {time.time() - tstart:.1f} seconds")
@@ -126,7 +126,7 @@ def get_all_loc_data() -> dict[str, pd.DataFrame]:
     for spotter_id in spotters:
         loc_path = data_basedir / spotters[spotter_id] / "parsed" / "location.csv"
         print(
-            f"location.csv for {spotter_id} is" f" {loc_path.stat().st_size/2**20:.1f} MB"
+            f"location.csv for {spotter_id} is {loc_path.stat().st_size / 2**20:.1f} MB"
         )
         loc_data[spotter_id] = get_loc_data(loc_path)
     print(f"Overall time to get location data: {time.time() - tstart:.1f} seconds")

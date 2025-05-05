@@ -98,11 +98,7 @@ class SMDData:
                 f"{mod_name}:\n"
                 f"{textwrap.indent(f'{self.modules[mod_name]}', prefix='  ')}\n"
             )
-        return (
-            "bsys:\n"
-            f"{textwrap.indent(f'{self.bsys}', prefix='  ')}\n"
-            f"{all_mod_txt}\n"
-        )
+        return f"bsys:\n{textwrap.indent(f'{self.bsys}', prefix='  ')}\n{all_mod_txt}\n"
 
 
 def _floatable(v):
@@ -205,10 +201,10 @@ def _parse_SMD_file(smd_path: PathLike) -> SMDData:
     for mod_name in MODULES_TYPES:
         mod_types = MODULES_TYPES[mod_name]
         colnames = {
-            f"data{i+2}": fieldname for i, fieldname in enumerate(mod_types.keys())
+            f"data{i + 2}": fieldname for i, fieldname in enumerate(mod_types.keys())
         }
         dropped_colnames = [
-            f"data{i+1}" for i in range(4) if f"data{i+1}" not in colnames
+            f"data{i + 1}" for i in range(4) if f"data{i + 1}" not in colnames
         ]
         mod_df = (
             sm_df[(sm_df["log_type"] == "DATA") & (sm_df["data1"] == mod_name)]

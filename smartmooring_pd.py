@@ -59,7 +59,7 @@ def _read_and_clean_smd_csv(
     A Pandas dataframe with columns `epoch_t`, `link`, `log_type`, and `data1..data5`
     """
     # data5 allows up to two commas within an unquoted BSYS message field
-    data_names = [f"data{i+1}" for i in range(5)]
+    data_names = [f"data{i + 1}" for i in range(5)]
     df = pd.read_csv(
         smd_path,
         names=["epoch_t", "link", "log_type", *data_names],
@@ -116,7 +116,7 @@ class SMDData:
                 f"{textwrap.indent(f'{self.modules[mod_name]}', prefix='  ')}\n"
             )
         other_repr = (
-            (f"--other--\n" f"{textwrap.indent(f'{self.other_sm}', prefix='  ')}\n")
+            (f"--other--\n{textwrap.indent(f'{self.other_sm}', prefix='  ')}\n")
             if not self.other_sm.empty
             else ""
         )

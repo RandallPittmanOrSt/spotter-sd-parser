@@ -280,7 +280,7 @@ def process_SMD_lines(lines):
         ):
             return (-1, "")
         items = quote_bsys(items)
-        line = f'{",".join(items)}\n'
+        line = f"{','.join(items)}\n"
         return sortval(items[0]), line
 
     sorted_results = sorted((process_line(line) for line in lines), key=lambda r: r[0])
