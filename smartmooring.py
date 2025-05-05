@@ -145,7 +145,7 @@ def _smd_line_ok(line: str) -> str | None:
     return f"{','.join(parts)}\n"
 
 
-def _clean_smd_file(smd_path: PathLike, tmpfile: io.TextIOWrapper) -> None:
+def _clean_smd_file(smd_path: PathLike, tmpfile: io.TextIOBase) -> None:
     """Remove duplicate header lines, ensure five fields per line."""
     with open(smd_path) as fobj:
         lines = fobj.readlines()
@@ -163,7 +163,7 @@ def _clean_smd_file(smd_path: PathLike, tmpfile: io.TextIOWrapper) -> None:
         tmpfile.write("\n")
 
 
-def _isempty(fobj: io.TextIOWrapper):
+def _isempty(fobj: io.TextIOBase):
     currpos = fobj.tell()
     end = fobj.seek(0, os.SEEK_END)
     fobj.seek(currpos)
