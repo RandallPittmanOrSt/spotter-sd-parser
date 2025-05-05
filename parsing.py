@@ -137,20 +137,39 @@ def parseLocationFiles(
             + ",SOG (mm/s),COG (deg*1000),Vert Vel (mm/s)"
         )
     else:
-        data = pd.read_csv(input_file_path, index_col=False, usecols=(0, 1, 2, 3, 4))
-        data = data.apply(pd.to_numeric, errors="coerce")
-        data = data.values
-        msk = np.isnan(data[:, 0])
-        data = data[~msk, :]
-        datetime = epochToDateArray(data[:, 0].tolist())
+        # TODO: Make these same kinds of simplifications for the other types
+        data = (
+            pd.read_csv(input_file_path, index_col=False, usecols=(0, 1, 2, 3, 4))
+            .dropna()
+            .reset_index(drop=True)
+            .astype(int)
+            .sort_values("GPS_Epoch_Time(s)")
+        )
+        datetime = pd.DataFrame(
+            epochToDateArray(data["GPS_Epoch_Time(s)"]),
+            columns=["year", "month", "day", "hour", "min", "sec", "msec"],
+        ).convert_dtypes()
+        data = pd.concat([datetime, data], axis=1)
+        data["latitude (decimal degrees)"] = (
+            data["lat(deg)"] + data["lat(min*1e5)"] / 6000000.0
+        )
+        data["longitude (decimal degrees)"] = (
+            data["long(deg)"] + data["long(min*1e5)"] / 6000000.0
+        )
+        data = data.drop(
+            columns=[
+                "GPS_Epoch_Time(s)",
+                "lat(deg)",
+                "lat(min*1e5)",
+                "long(deg)",
+                "long(min*1e5)",
+            ]
+        )
 
-        data[:, 1] = data[:, 1] + data[:, 2] / 6000000.0
-        data[:, 2] = data[:, 3] + data[:, 4] / 6000000.0
-        data = data[:, 1:3]
-        data = np.concatenate((datetime, data), axis=1)
+        data = data.values
 
         fmt = "%i," * 7 + "%13.8f,%13.8f"
-        header = header + ", latitude (decimal degrees),longitude (decimal degrees)"
+        header = header + ",latitude (decimal degrees),longitude (decimal degrees)"
 
     if outputFileType.lower() in ["csv", "gz"]:
         np.savetxt(output_file_path, data, fmt=fmt, header=header)
