@@ -1,3 +1,6 @@
+"""versions.py - Functions for determining different versions of Spotter firmware."""
+
+from typing import TypedDict
 from filenames import PathLike, getFileNames
 
 #'SHA <-> version-number' relation
@@ -65,7 +68,18 @@ defaultVersion = 0
 defaultIIRWeightType = 0
 
 
-def getVersions(path: PathLike | None):
+class VersionDict(TypedDict):
+    """Version and IIRWeightType information."""
+
+    sha: list[str]
+    version: list[str]
+    ordinal: list[tuple[int, int]]
+    number: int
+    IIRWeightType: int
+    fileNumbers: list[str]
+
+
+def getVersions(path: PathLike | None) -> list[VersionDict]:
     """
     This function retrieves sha from sys filenames; if no sha is present
     within the first 20 lines, it is assumed the previous found sha is
@@ -77,30 +91,28 @@ def getVersions(path: PathLike | None):
     # Get sys files
     path, fileNames = getFileNames(path, "SYS", "system")
 
-    def latestVersion():
-        ordinal = -1
-        for key in ordinalVersionNumber:
-            if ordinalVersionNumber[key][1] > ordinal:
-                latVer = key
-        return latVer
+    latestVersion = max(ordinalVersionNumber.items(), key=lambda item: item[1])[0]
 
-    # end def
-    if len(fileNames) == 0:
-        sha = latestVersion()
-        IIRWeightType = defaultIIRWeightType
-        return [
+    def version_dict(sha: str, weight_type: int):
+        return VersionDict(
             {
                 "sha": [sha],
                 "version": [supportedVersions[sha]],
                 "ordinal": [ordinalVersionNumber[sha]],
                 "number": ordinalVersionNumber[sha][1],
-                "IIRWeightType": IIRWeightType,
+                "IIRWeightType": weight_type,
                 "fileNumbers": [],
             }
-        ]
+        )
+
+    latestVersionDict = version_dict(latestVersion, defaultIIRWeightType)
+
+    if len(fileNames) == 0:
+        # Assume the latest version if we don't have any SYS files.
+        return [latestVersionDict]
 
     first = True
-    version: list[dict] = []
+    version: list[VersionDict] = []
     # Loop over all the _SYS files
     for index, filename in enumerate(fileNames):
         foundSha = False
@@ -126,38 +138,19 @@ def getVersions(path: PathLike | None):
             # Is it a valid sha?
             if sha not in ordinalVersionNumber:
                 # If not - parse using the latest version
-                sha = latestVersion()
+                sha = latestVersion
 
         # Valid sha, so what to do?
         if foundSha and first:
             # this the first file, and we found a sha
-            version.append(
-                {
-                    "sha": [sha],
-                    "version": [supportedVersions[sha]],
-                    "ordinal": [ordinalVersionNumber[sha]],
-                    "number": ordinalVersionNumber[sha][1],
-                    "IIRWeightType": IIRWeightType,
-                    "fileNumbers": [],
-                }
-            )
+            version.append(version_dict(sha, IIRWeightType))
             first = False
         elif not foundSha and first:
             # this is the first file, but no sha - we will try to continue
             # under the assumption that the version corresponds to the
             # latest version - may lead to problems in older version
             print("WARNING: Cannot determine version number from first SYS file.")
-            sha = latestVersion()
-            version.append(
-                {
-                    "sha": [sha],
-                    "version": [supportedVersions[sha]],
-                    "ordinal": [ordinalVersionNumber[sha]],
-                    "number": ordinalVersionNumber[sha][1],
-                    "IIRWeightType": IIRWeightType,
-                    "fileNumbers": [],
-                }
-            )
+            version.append(version_dict(latestVersion, IIRWeightType))
             first = False
         elif foundSha and not first:
             # We found a new sha, check if it is the same as previous found sha
@@ -179,16 +172,7 @@ def getVersions(path: PathLike | None):
                 else:
                     # Not Compatible, we add a new version to the version list
                     # that has to be processed seperately
-                    version.append(
-                        {
-                            "sha": [sha],
-                            "version": [supportedVersions[sha]],
-                            "ordinal": [ordinalVersionNumber[sha]],
-                            "number": ordinalVersionNumber[sha][1],
-                            "IIRWeightType": IIRWeightType,
-                            "fileNumbers": [],
-                        }
-                    )
+                    version.append(version_dict(sha, IIRWeightType))
         entry, ___ = filename.split("_")
         # Add file log identifier (e.g. 0009_????.csv, with entry = '0009')
         version[-1]["fileNumbers"].append(entry)
