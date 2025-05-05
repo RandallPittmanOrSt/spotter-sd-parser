@@ -6,7 +6,7 @@ import pandas as pd
 from typing import Literal
 
 
-def df_dtindex_to_unix_epoch(
+def add_unix_epoch_to_df(
     df: pd.DataFrame,
     colname="unix_epoch",
     precision: Literal["s", "ms", "us", "ns"] = "ms",
@@ -43,7 +43,7 @@ def df_dtindex_to_unix_epoch(
     return df[cols[-1:] + cols[:-1]], fmt_specs[precision]
 
 
-def df_dtindex_split(
+def add_timecols_to_df(
     df: pd.DataFrame,
 ) -> tuple[pd.DataFrame, tuple[str, ...], tuple[str, ...]]:
     """Use a DataFrame's DatetimeIndex to create integer columns

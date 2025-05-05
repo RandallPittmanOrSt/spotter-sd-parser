@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from scipy import io, signal
 
-from filenames import extensions
+from filenames import filetype2ext
 from versions import defaultIIRWeightType, defaultVersion
 
 #
@@ -32,7 +32,8 @@ def parseLocationFiles(
     """
 
     output_file_path = (
-        output_file_path.parent / f"{output_file_path.stem}.{extensions(outputFileType)}"
+        output_file_path.parent
+        / f"{output_file_path.stem}.{filetype2ext(outputFileType)}"
     )
 
     # Load location data into a pandas dataframe object
@@ -358,7 +359,7 @@ def parseSpectralFiles(
 
     for key in outputFileName:
         fname = outputFileName[key].split(".")[0]
-        outputFileName[key] = f"{fname}.{extensions(outputFileType)}"
+        outputFileName[key] = f"{fname}.{filetype2ext(outputFileType)}"
 
     # The output  files given by the script; per defauly only Szz is given, but can be
     # altered by user request

@@ -6,7 +6,8 @@ from typing import TypeAlias
 PathLike: TypeAlias = str | Path
 
 
-def extensions(outputFileType):
+def filetype2ext(outputFileType: str) -> str:
+    """Return a file extension for a file type string"""
     ext = {"csv": "csv", "matlab": "mat", "numpy": "npz", "pickle": "pickle", "gz": "gz"}
     if outputFileType.lower() in ext:
         return ext[outputFileType.lower()]
