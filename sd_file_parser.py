@@ -233,17 +233,16 @@ def main(
         outputSpectra = ["Szz", "a1", "b1", "a2", "b2", "Sxx", "Syy", "Qxz", "Qyz", "Cxy"]
     else:
         outputSpectra = [spectra]
-    if len(versions) == 1:
+
+    for index, version in enumerate(versions):
+        outd = Path(outpath, str(index)) if len(versions) > 1 else outpath
+        outd.mkdir(parents=True, exist_ok=True)
         # if there is only a single version- we allow all files to be parsed. this is a
         # clutch to account for the fact that sys files are not garantueed to be written.
         # In general assuming everything is the same version seems safe- allowing to parse
         # multiple different versions is perhaps something we want to stop supporting as
         # it adds a lot of fragile logic.
-        versions[0]["fileNumbers"] = None
-
-    for index, version in enumerate(versions):
-        outd = Path(outpath, str(index)) if len(versions) > 1 else outpath
-        outd.mkdir(parents=True, exist_ok=True)
+        fileNumbers = version["fileNumbers"] if len(versions) > 1 else None
 
         for suffix in suffixes:
             file_path = outd / f"{outFiles[suffix]}.csv"
@@ -255,7 +254,7 @@ def main(
                     outputFileType="CSV",
                     Suffix=suffix,
                     output_file_path=file_path,
-                    versionFileList=version["fileNumbers"],
+                    versionFileList=fileNumbers,
                     compatibility_version=version["number"],
                 )
             ):
