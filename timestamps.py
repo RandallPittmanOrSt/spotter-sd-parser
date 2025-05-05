@@ -28,7 +28,10 @@ def df_dtindex_to_unix_epoch(
     """
     divisors = {"s": 1.0, "ms": 1e3, "us": 1e6, "ns": 1e9}
     fmt_specs = {"s": "%.f", "ms": "%.3f", "us": "%.6f", "ns": "%.9f"}
-    assert isinstance(df.index, pd.DatetimeIndex)
+    if not isinstance(df.index, pd.DatetimeIndex):
+        raise TypeError(
+            "The dataframe must have a DatetimeIndex index to use this function."
+        )
 
     dt_type = f"datetime64[{precision}]"
     df[colname] = df.index.astype(dt_type).astype("int64") / divisors[precision]
@@ -54,7 +57,10 @@ def df_dtindex_split(
     fmt_spec
         A tuple of format specifiers for use with np.savetxt
     """
-    assert isinstance(df.index, pd.DatetimeIndex)
+    if not isinstance(df.index, pd.DatetimeIndex):
+        raise TypeError(
+            "The dataframe must have a DatetimeIndex index to use this function."
+        )
     for part in ["year", "month", "day", "hour", "minute", "second", "microsecond"]:
         df[part] = getattr(df.index, part)
     # convert microseconds to milliseconds
