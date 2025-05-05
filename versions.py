@@ -1,5 +1,3 @@
-from typing import Dict, List, Optional
-
 from filenames import PathLike, getFileNames
 
 #'SHA <-> version-number' relation
@@ -67,7 +65,7 @@ defaultVersion = 0
 defaultIIRWeightType = 0
 
 
-def getVersions(path: Optional[PathLike]):
+def getVersions(path: PathLike | None):
     """
     This function retrieves sha from sys filenames; if no sha is present
     within the first 20 lines, it is assumed the previous found sha is
@@ -102,7 +100,7 @@ def getVersions(path: Optional[PathLike]):
         ]
 
     first = True
-    version: List[Dict] = []
+    version: list[dict] = []
     # Loop over all the _SYS files
     for index, filename in enumerate(fileNames):
         foundSha = False
