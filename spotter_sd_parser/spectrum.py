@@ -109,7 +109,7 @@ class Spectrum:
                 data = np.loadtxt(
                     self.spectra_dir / self._parser_files[key], delimiter=","
                 )
-                self.time = data[:, 0:8]
+                self.time = data[:, 0:8]  # all files have the same timestamps
                 self._data[key] = data[:, 8:]
                 mask = np.isnan(self.data(key))
                 self.data(key)[mask] = 0.0
