@@ -1,6 +1,8 @@
 from pathlib import Path
+from typing import cast
 
 import numpy as np
+import numpy.typing as npt
 
 
 class Spectrum:
@@ -23,7 +25,7 @@ class Spectrum:
         }
         self.spectra_dir = spectra_dir
         self.out_dir = out_dir
-        self._data: dict[str, np.ndarray | None] = {
+        self._data: dict[str, npt.NDArray[np.float64] | None] = {
             "Szz": None,
             "a1": None,
             "b1": None,
@@ -47,7 +49,7 @@ class Spectrum:
         # Load the data from the parser
         self._load_parser_output()
 
-    def data(self, key) -> np.ndarray:
+    def data(self, key: str) -> npt.NDArray[np.float64]:
         """Getter that ensures a _data item exists"""
         v = self._data[key]
         if v is None:
@@ -119,12 +121,16 @@ class Spectrum:
             if not self._file_available[key]:
                 self._data[key] = self._none
 
-    def _moment(self, values):
+    def _moment(self, values: npt.NDArray[np.float64] | float) -> npt.NDArray[np.float64]:
         E = self.Szz * values
         jstart = 3
-        return np.trapz(E[:, jstart:], self.f[jstart:], 1)
+        # Szz is 2d, so this will return at least 1d
+        assert self.Szz.ndim > 1
+        return cast(
+            npt.NDArray[np.float64], np.trapezoid(E[:, jstart:], self.f[jstart:], 1)
+        )
 
-    def _weighted_moment(self, values):
+    def _weighted_moment(self, values: npt.NDArray[np.float64]):
         return self._moment(values) / self._moment(1.0)
 
     @property
