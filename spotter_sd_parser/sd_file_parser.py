@@ -276,8 +276,8 @@ def main(
                     # parse the mean location/displacement files; this step extract
                     # relevant spectra (Szz, Sxx etc.) from the bulk spectral file
                     parseSpectralFiles(
-                        inputFileName=file_path,
-                        outputPath=outd,
+                        input_file_path=file_path,
+                        output_dir=outd,
                         outputFileType=outputFileType,
                         outputSpectra=outputSpectra,
                         lfFilter=lfFilter,

@@ -20,13 +20,13 @@ applyPhaseCorrectionFromVersionNumber = 2
 
 
 def parseLocationFiles(
-    input_file_path,
-    output_file_path=Path("displacement.CSV"),
-    kind="FLT",
-    reportProgress=True,
-    outputFileType="CSV",
-    versionNumber=defaultVersion,
-    IIRWeightType=defaultIIRWeightType,
+    input_file_path: Path,
+    output_file_path: Path = Path("displacement.CSV"),
+    kind: str = "FLT",
+    reportProgress: bool = True,
+    outputFileType: str = "CSV",
+    versionNumber: int = defaultVersion,
+    IIRWeightType: int = defaultIIRWeightType,
 ):
     """
     This functions loads all the gps-location data (located at *path*) from a Spotter into
@@ -327,17 +327,17 @@ def epochToDateArray(epochtime):
 
 
 def parseSpectralFiles(
-    inputFileName,
-    outputPath: Path,
-    outputFileNameDict=None,
-    spectralDataSuffix="SPC",
-    reportProgress=True,
-    nf=128,
-    df=0.009765625,
-    outputSpectra=None,
-    outputFileType="CSV",
-    lfFilter=False,
-    versionNumber=defaultVersion,
+    input_file_path: Path,
+    output_dir: Path,
+    outputFileNameDict: dict | None = None,
+    spectralDataSuffix: str = "SPC",
+    reportProgress: bool = True,
+    nf: int = 128,
+    df: float = 0.009765625,
+    outputSpectra: list[str] | None = None,
+    outputFileType: str = "CSV",
+    lfFilter: bool = False,
+    versionNumber: int = defaultVersion,
 ):
     # This functions loads all the Spectral data (located at *path*) from a Spotter into
     # one datastructure and saves the result as a CSV file (*outputFileName*).
@@ -443,7 +443,7 @@ def parseSpectralFiles(
     # still reliant on Pandas, and only there due to supposed performance
     # benifits.
     tmp = pd.read_csv(
-        inputFileName,
+        input_file_path,
         index_col=False,
         skiprows=[0],
         header=None,
@@ -503,7 +503,7 @@ def parseSpectralFiles(
         if outputFileType.lower() == "csv":
             if outputFileType.lower() in ["csv", "gz"]:
                 np.savetxt(
-                    outputPath / outputFileName[key],
+                    output_dir / outputFileName[key],
                     data[key],
                     fmt=fmt,
                     header=header,
@@ -512,7 +512,7 @@ def parseSpectralFiles(
             # To save to matlab .mat format we need scipy
             mat = data[key]
             io.savemat(
-                outputPath / outputFileName[key],
+                output_dir / outputFileName[key],
                 {
                     "spec": mat[:, 8:].astype(np.float32),
                     "time": mat[:, 0:7].astype(np.int16),
@@ -523,7 +523,7 @@ def parseSpectralFiles(
         elif outputFileType.lower() == "numpy":
             mat = data[key]
             np.savez(
-                outputPath / outputFileName[key],
+                output_dir / outputFileName[key],
                 spec=mat[:, 8:].astype(np.float32),
                 time=mat[:, 0:7].astype(np.int16),
                 frequencies=freq.astype(np.float32),
