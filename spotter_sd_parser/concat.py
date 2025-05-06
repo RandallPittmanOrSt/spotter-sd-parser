@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from spotter_sd_parser.filenames import PathLike, filetype2ext, getFileNames
+from spotter_sd_parser.filenames import filetype2ext, getFileNames
 from spotter_sd_parser.versions import defaultVersion
 
 
@@ -129,8 +129,8 @@ def cat(
 class Outfile:
     """A wrapper for both regular text file and GZip file I/O"""
 
-    def __init__(self, outputFileName: PathLike, outputFileType: str):
-        self.path: PathLike = outputFileName
+    def __init__(self, outputFileName: Path, outputFileType: str):
+        self.path = outputFileName
         self.gzip = outputFileType.lower() == "gz"
 
     def open(self):

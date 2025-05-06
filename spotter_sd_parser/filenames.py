@@ -1,9 +1,6 @@
 import re
 from itertools import chain
 from pathlib import Path
-from typing import TypeAlias
-
-PathLike: TypeAlias = str | Path
 
 
 def filetype2ext(outputFileType: str) -> str:
@@ -15,13 +12,9 @@ def filetype2ext(outputFileType: str) -> str:
         raise Exception("Unknown outputFileType; options are: numpy, matlab, pickle, csv")
 
 
-def getFileNames(path: str | Path | None, suffix, message, versionFileList=None):
+def getFileNames(path: Path, suffix, message, versionFileList=None):
     """This function returns all the filenames in a given *path* that conform to
     [D*]D_YYY.CSV where YYY is given by *suffix*."""
-
-    path = Path(path) if path else Path()
-    path = path.absolute()
-
     synonyms = [suffix]
     if suffix == "LOC":
         synonyms.append("GPS")

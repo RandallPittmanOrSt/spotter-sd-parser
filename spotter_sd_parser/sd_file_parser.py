@@ -160,15 +160,14 @@ from pathlib import Path
 from typing import Any, Literal
 
 from spotter_sd_parser.concat import cat
-from spotter_sd_parser.filenames import PathLike
 from spotter_sd_parser.parsing import parseLocationFiles, parseSpectralFiles
 from spotter_sd_parser.spectrum import Spectrum
 from spotter_sd_parser.versions import getVersions
 
 
 def main(
-    path: PathLike | None = None,
-    outpath: PathLike | None = None,
+    path: Path | str = Path(),
+    outpath: Path | str | None = None,
     outputFileType: Literal["CSV", "matlab", "numpy", "gz"] = "CSV",
     spectra: str = "all",
     suffixes: list[str] | None = None,
@@ -202,6 +201,10 @@ def main(
         Should the bulk spectral parameters be calculated? Default is True.
 
     """
+    # If no path given, assume current directory
+    path = Path(path).absolute()
+    # If no outpath given, assume same as path
+    outpath = Path(outpath).absolute() if outpath else path
 
     # Check the version of Files
     versions = getVersions(path)
@@ -223,11 +226,6 @@ def main(
         "SMD": "smartmooring_data",
         "BARO": "barometer",
     }
-    # If no path given, assume current directory
-    path = Path(path).absolute() if path else Path().absolute()
-    # If no outpath given, assume same as path
-    outpath = Path(outpath).absolute() if outpath else path
-
     # Which spectra to process
     if spectra == "all":
         outputSpectra = ["Szz", "a1", "b1", "a2", "b2", "Sxx", "Syy", "Qxz", "Qyz", "Cxy"]

@@ -3,7 +3,6 @@
 import io
 import tempfile
 from pathlib import Path
-from typing import TypeAlias
 
 import pandas as pd
 
@@ -17,10 +16,8 @@ LOC_OUT_HEADER_LINE = (
 LOC_LINE_FORMAT = ",".join(["%d"] * 7 + ["%13.8f"] * 2)
 """field formats for np.savetxt"""
 
-PathLike: TypeAlias = str | Path
 
-
-def parse_location_file(loc_path: PathLike) -> pd.DataFrame:
+def parse_location_file(loc_path: Path) -> pd.DataFrame:
     """Parse a *_LOC.csv spotter file and return a pandas dataframe with a datetime index"""
     with tempfile.TemporaryFile(mode="w+") as tmpfile:
         clean_loc_file(loc_path, tmpfile)
@@ -46,9 +43,8 @@ def parse_location_file(loc_path: PathLike) -> pd.DataFrame:
     )
 
 
-def merge_location_files(loc_dir: PathLike) -> pd.DataFrame:
-    loc_dir_path = Path(loc_dir)
-    loc_paths = [*loc_dir_path.glob("*_LOC.csv"), *loc_dir_path.glob("*_LOC.CSV")]
+def merge_location_files(loc_dir: Path) -> pd.DataFrame:
+    loc_paths = [*loc_dir.glob("*_LOC.csv"), *loc_dir.glob("*_LOC.CSV")]
     loc_dfs = []
     for loc_path in loc_paths:
         loc_df = parse_location_file(loc_path)
@@ -71,7 +67,7 @@ def line_ok(line: str, nparts: int) -> bool:
     return len(parts) == nparts and floatable(parts[0])
 
 
-def clean_loc_file(loc_path: PathLike, tmpfile: io.TextIOWrapper) -> None:
+def clean_loc_file(loc_path: Path | str, tmpfile: io.TextIOWrapper) -> None:
     """Remove duplicate header lines, ensure five fields per line."""
     with open(loc_path) as fobj:
         lines = fobj.readlines()

@@ -1,8 +1,9 @@
 """versions.py - Functions for determining different versions of Spotter firmware."""
 
+from pathlib import Path
 from typing import TypedDict
 
-from spotter_sd_parser.filenames import PathLike, getFileNames
+from spotter_sd_parser.filenames import getFileNames
 
 #'SHA <-> version-number' relation
 # (note that duel entry for 1.2.5/1.4.2 is due to update glitches)
@@ -80,7 +81,7 @@ class VersionDict(TypedDict):
     fileNumbers: list[str]
 
 
-def getVersions(path: PathLike | None) -> list[VersionDict]:
+def getVersions(path: Path) -> list[VersionDict]:
     """
     This function retrieves sha from sys filenames; if no sha is present
     within the first 20 lines, it is assumed the previous found sha is

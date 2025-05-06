@@ -9,7 +9,6 @@ import textwrap
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TypeAlias
 
 import numpy as np
 import pandas as pd
@@ -22,7 +21,6 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
-PathLike: TypeAlias = str | Path
 
 #: Original header line of SMD files
 SMD_IN_HEADER_LINE = "epoch,link,log type,data\n"
@@ -145,7 +143,7 @@ def _smd_line_ok(line: str) -> str | None:
     return f"{','.join(parts)}\n"
 
 
-def _clean_smd_file(smd_path: PathLike, tmpfile: io.TextIOBase) -> None:
+def _clean_smd_file(smd_path: Path, tmpfile: io.TextIOBase) -> None:
     """Remove duplicate header lines, ensure five fields per line."""
     with open(smd_path) as fobj:
         lines = fobj.readlines()
@@ -170,7 +168,7 @@ def _isempty(fobj: io.TextIOBase):
     return end == 0
 
 
-def _parse_SMD_file(smd_path: PathLike) -> SMDData:
+def _parse_SMD_file(smd_path: Path) -> SMDData:
     """Parse a *_SMD.csv spotter file and return pandas DataFrames with a datetime
     index"""
     with io.StringIO() as tmpfile:
@@ -251,7 +249,7 @@ def _merge_SMD_results(all_smd_data: list[SMDData]) -> SMDData:
     return merged_smd_data
 
 
-def write_smd_results(out_dir: PathLike, smd_data: SMDData, outfile_prefix=""):
+def write_smd_results(out_dir: Path, smd_data: SMDData, outfile_prefix=""):
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     # BSYS
@@ -283,9 +281,8 @@ def write_smd_results(out_dir: PathLike, smd_data: SMDData, outfile_prefix=""):
         np.savetxt(other_path, other_df.values, fmt=other_formatstr, header=other_header)
 
 
-def parse_and_merge_all_SMD_files(smd_dir: PathLike) -> SMDData:
-    smd_dir_path = Path(smd_dir)
-    smd_paths = [*smd_dir_path.glob("*_SMD.csv"), *smd_dir_path.glob("*_SMD.CSV")]
+def parse_and_merge_all_SMD_files(smd_dir: Path) -> SMDData:
+    smd_paths = [*smd_dir.glob("*_SMD.csv"), *smd_dir.glob("*_SMD.CSV")]
     all_smd_data = _parse_SMD_files(smd_paths)
     return _merge_SMD_results(all_smd_data)
 

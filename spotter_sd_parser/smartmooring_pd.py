@@ -15,8 +15,6 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
-PathLike = str | Path
-
 
 class EpochRange(NamedTuple):
     min: float | None = None
@@ -42,7 +40,7 @@ def _int_able(v):
 
 
 def _read_and_clean_smd_csv(
-    smd_path: PathLike, epoch_range: EpochRange = EpochRange()
+    smd_path: Path, epoch_range: EpochRange = EpochRange()
 ) -> pd.DataFrame:
     """Read a Smart Mooring CSV file into a Pandas DataFrame, including some basic
     cleaning.
@@ -212,7 +210,7 @@ def _preprocess_data_df(data_df: pd.DataFrame, mod_type: str):
     )
 
 
-def _preprocess_smd_file(smd_path: PathLike, epoch_range: EpochRange) -> SMDData:
+def _preprocess_smd_file(smd_path: Path, epoch_range: EpochRange) -> SMDData:
     """Convert a *SMD.csv file into a structure of Pandas dataframes
 
     Parameters
