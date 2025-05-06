@@ -294,6 +294,8 @@ def main(
 
 
 if __name__ == "__main__":
+    # The usual entry point is spotter_sd_parer.cli:app(), but this module can be called
+    # too:
     from cyclopts import App
 
     app = App()

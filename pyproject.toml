@@ -11,6 +11,9 @@ dependencies = [
     "scipy>=1.13.1",
 ]
 
+[project.scripts]
+spotter-sd-parser = "spotter_sd_parser.cli:app"
+
 [dependency-groups]
 dev = [
     "ipdb>=0.13.13",
