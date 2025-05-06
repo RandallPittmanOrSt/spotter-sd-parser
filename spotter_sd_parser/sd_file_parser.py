@@ -153,11 +153,11 @@ Major Updates:
     various  | Dec, 2021 | 1.8.0+, 2.0.0+   | Spotter v3 update
 """
 
-import inspect
 import os
-import sys
 from pathlib import Path
-from typing import Any, Literal
+from typing import Literal
+
+from cyclopts.types import ExistingDirectory
 
 from spotter_sd_parser.concat import cat
 from spotter_sd_parser.parsing import parseLocationFiles, parseSpectralFiles
@@ -166,8 +166,8 @@ from spotter_sd_parser.versions import getVersions
 
 
 def main(
-    path: Path | str = Path(),
-    outpath: Path | str | None = None,
+    path: ExistingDirectory = Path(),
+    outpath: ExistingDirectory | None = None,
     outputFileType: Literal["CSV", "matlab", "numpy", "gz"] = "CSV",
     spectra: str = "all",
     suffixes: list[str] | None = None,
@@ -176,9 +176,10 @@ def main(
     bulkParameters=True,
 ):
     """
-    Combine selected SPOTTER output files  into CSV files. This routine is called by
-    __main__ and that calls in succession the separate routines to concatenate, and parse
-    files.
+    Combine selected SPOTTER output files into CSV files.
+
+    This routine calls in succession separate routines to concatenate, parse, and
+    postprocess files.
 
     Inputs
     ------
@@ -292,43 +293,9 @@ def main(
                 spectrum.generate_text_file()
 
 
-def validCommandLineArgument(arg: str):
-    key: str
-    val: Any
-    out = arg.split("=")
-
-    if not (len(out) == 2):
-        print(f"ERROR: Unknown commandline argument: {arg}")
-        sys.exit(1)
-    key, val = out
-
-    # normalize arg names to the capitalization required by main()
-    argnames = list(inspect.signature(main).parameters)
-    for argname in argnames:
-        if key.lower() == argname.lower():
-            key = argname
-            break
-    else:
-        print(f"ERROR: unknown commandline argument {key}")
-        sys.exit(1)
-    if key in ["suffixes", "parsing"]:
-        # Make into a list
-        val = val.replace("[", "").replace("]", "")
-        val = [val]
-    elif key in ["lfFilter", "bulkParameters"]:
-        val = val.lower() == "true" or val.lower() == "yes"
-    return (key, val)
-
-
 if __name__ == "__main__":
-    # execute only if run as a script
-    narg = len(sys.argv[1:])
-    if narg > 0:
-        # parse and check command line arguments
-        arguments = dict()
-        for argument in sys.argv[1:]:
-            key, val = validCommandLineArgument(argument)
-            arguments[key] = val
-    else:
-        arguments = dict()
-    main(**arguments)
+    from cyclopts import App
+
+    app = App()
+    app.default(main)
+    app()
