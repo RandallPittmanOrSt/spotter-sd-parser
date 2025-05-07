@@ -5,6 +5,7 @@ test the SST parsing functions of the sd_file_parser.py
 """
 
 import os
+import time
 import unittest
 from pathlib import Path
 
@@ -37,7 +38,7 @@ class SSTParsingTest(unittest.TestCase):
         prepare for running the parser
         """
         self.inputfn = Path("example_data/2021-01-15/0235_SST.CSV")
-        self.outputfn = Path("sst.CSV")
+        self.outputfn = Path("sst.csv")
 
     def tearDown(self):
         """
