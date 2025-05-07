@@ -4,10 +4,13 @@ import textwrap
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
+from itertools import chain
 from pathlib import Path
-from typing import Iterable, NamedTuple
+from typing import Annotated, NamedTuple
 
 import pandas as pd
+from cyclopts import App, Parameter
+from cyclopts.types import Directory, ExistingDirectory
 
 SCRIPTNAME = Path(__file__).name
 
@@ -245,7 +248,7 @@ def _preprocess_smd_file(smd_path: Path, epoch_range: EpochRange) -> SMDData:
 class SMDMerger:
     """A class to wrap up the merging of a bunch of Smart Mooring data files"""
 
-    def __init__(self, smd_paths: Iterable[Path], epoch_range: EpochRange) -> None:
+    def __init__(self, smd_paths: list[Path], epoch_range: EpochRange) -> None:
         self._smd_paths = smd_paths
         self._merged_smd_data = SMDData.empty()
         self._epoch_range = epoch_range
@@ -306,8 +309,7 @@ class SMDMerger:
 
 def write_merged_smd_data(outdir: Path, merged_smd_data: SMDData):
     logger.info("Writing merged smartmooring CSVs to %s", outdir)
-    if not outdir.is_dir():
-        outdir.mkdir(parents=True, exist_ok=True)
+    outdir.mkdir(parents=True, exist_ok=True)
     to_csv_kwargs = {"float_format": "%.2f", "index": False}
     if not merged_smd_data.bsys.empty:
         bsys_fname = outdir / "BSYS.csv"
@@ -323,77 +325,48 @@ def write_merged_smd_data(outdir: Path, merged_smd_data: SMDData):
         mod_data.to_csv(mod_fname, **to_csv_kwargs)
 
 
-def _cli_err(logger_msg, *logger_args, code: int = 1):
-    """Log an error message and exit."""
-    logger.error(logger_msg, *logger_args)
-    sys.exit(code)
+def main(
+    raw_data_dir: ExistingDirectory,
+    /,
+    output_data_dir: Annotated[Directory, Parameter(name=["output-data-dir", "-o"])]
+    | None = None,
+    min_datetime: Annotated[str | None, Parameter(name=["min-datetime", "-n"])] = None,
+    max_datetime: Annotated[str | None, Parameter(name=["max-datetime", "-x"])] = None,
+):
+    """Merge all the smartmooring (SMD) files in a directory and generate output files for
+    each instrument.
 
-
-def _usage_err():
-    _cli_err(
-        (
-            "Usage:\n"
-            " %s sm_data_dir [-o sm_out_dir] [-n min_datetime] [-x max_datetime]\n"
-            "\n"
-            "min_datetime and/or max_datetime can be any date/time string that can be\n"
-            "interpreted by pandas.Timestamp, like 2024-04-01 or 2023-10-25T00:23:43Z\n"
-            "Naive values are assumed to be UTC."
-        ),
-        SCRIPTNAME,
-    )
-
-
-def _cli_option(flag: str, argv: list[str]) -> str | None:
-    if flag in argv:
-        flag_idx = argv.index(flag)
-        if flag_idx + 1 >= len(argv):
-            _usage_err()
-        return argv[flag_idx + 1]
-    return None
-
-
-def cli():
-    if len(sys.argv) < 2 or sys.argv[1] in ["-h", "--help"]:
-        _usage_err()
-    spotter_dir = Path(sys.argv[1])
-    out_dir = spotter_dir / "smartmooring"
-    min_epoch_t = None
-    max_epoch_t = None
-    if opt := _cli_option("-o", sys.argv):
-        out_dir = Path(opt)
-    if opt := _cli_option("-n", sys.argv):
-        min_epoch_t = pd.Timestamp(opt).timestamp()
-    if opt := _cli_option("-x", sys.argv):
-        max_epoch_t = pd.Timestamp(opt).timestamp()
+    Parameters
+    ----------
+    raw_data_dir
+        The existing directory where all the \\*_SMD.csv files are.
+    output_data_dir
+        The directory to which to save the per-instrument merged data files. If not
+        provided, a "smartmooring" subdirectory will be created in `raw_data_data` and
+        this location will be used.
+    min_datetime
+        Minimum date/time to keep in output. May be provided as any string that can be
+        interpreted by pandas.Timestamp(). Naive values are assumed to be UTC.
+    max_datetime
+        Maximum date/time to keep in output. May be provided as any string that can be
+        interpreted by pandas.Timestamp(). Naive values are assumed to be UTC.
+    nproc
+        Number of processes to use for parsing. Defaults to the value of os.cpu_count().
+    """
+    if output_data_dir is None:
+        output_data_dir = raw_data_dir / "smartmooring"
+    min_epoch_t = pd.Timestamp(min_datetime).timestamp() if min_datetime else None
+    max_epoch_t = pd.Timestamp(max_datetime).timestamp() if max_datetime else None
     epoch_range = EpochRange(min_epoch_t, max_epoch_t)
-    smd_paths = [*spotter_dir.glob("*_SMD.csv"), *spotter_dir.glob("*_SMD.CSV")]
+    smd_paths = sorted(
+        chain(raw_data_dir.glob("*_SMD.csv"), raw_data_dir.glob("*_SMD.CSV"))
+    )
     merged_smd_data = SMDMerger(smd_paths, epoch_range).run(parallel=True)
-    write_merged_smd_data(out_dir, merged_smd_data)
+    write_merged_smd_data(output_data_dir, merged_smd_data)
 
 
 if __name__ == "__main__":
-    # basedir = Path(
-    #     "/nfs/depot/cce_u1/haller/shared/FIELD_DATA/USACE/2023-2024/SD_card_data"
-    # )
-    # # smd_path = "/nfs/depot/cce_u1/haller/shared/FIELD_DATA/USACE/2023-2024/SD_card_data/S3_SPOT-30035R/0022_SMD.csv"
-    # # smd_path = "/nfs/depot/cce_u1/haller/shared/FIELD_DATA/USACE/2023-2024/SD_card_data/S1_SPOT-1132/0319_SMD.CSV"
-    # # smd_path = "/nfs/depot/cce_u1/haller/shared/FIELD_DATA/USACE/2023-2024/SD_card_data/S4_SPOT-30034R/1039_SMD.csv"  # 46M
-    # # smd_path = "/nfs/depot/cce_u1/haller/shared/FIELD_DATA/USACE/2023-2024/SD_card_data/S4_SPOT-30034R/11184_SMD.csv"  # 103M
-    # # smd_data = _preprocess_smd_file(smd_path)
+    from cyclopts import App
 
-    # # spotter_dir = basedir / "S1_SPOT-1132"
-    # # spotter_dir = basedir / "S2_SPOT-1081"
-    # # spotter_dir = basedir / "S3_SPOT-30035R"
-    # date_range = ("2023-10-01T00:00:00Z", "2024-04-01T00:00:00Z")
-    # epoch_range = (
-    #     pd.Timestamp(date_range[0]).timestamp(),
-    #     pd.Timestamp(date_range[1]).timestamp(),
-    # )
-    # spotter_dir = basedir / "S4_SPOT-30034R"
-    # smd_paths = [*spotter_dir.glob("*_SMD.csv"), *spotter_dir.glob("*_SMD.CSV")]
-    # merged_smd_data = SMDMerger(smd_paths, epoch_range=epoch_range).run(parallel=True)
-    # write_merged_smd_data(Path("smartmooring"), merged_smd_data)
-    try:
-        cli()
-    except Exception:
-        logger.exception("There was an error running %s", SCRIPTNAME)
+    app = App(name="smartmooring_pd")
+    app.default(main)

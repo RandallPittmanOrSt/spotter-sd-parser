@@ -4,14 +4,16 @@
 import io
 import logging
 import os
-import sys
 import textwrap
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Annotated
 
 import numpy as np
 import pandas as pd
+from cyclopts import Parameter
+from cyclopts.types import Directory, ExistingDirectory
 
 from spotter_sd_parser.timestamps import add_unix_epoch_to_df
 
@@ -287,38 +289,35 @@ def parse_and_merge_all_SMD_files(smd_dir: Path) -> SMDData:
     return _merge_SMD_results(all_smd_data)
 
 
-def cli_err(logger_msg, *logger_args, code: int = 1):
-    """Log an error message and exit."""
-    logger.error(logger_msg, *logger_args)
-    sys.exit(code)
+def main(
+    raw_data_dir: ExistingDirectory,
+    /,
+    output_data_dir: Annotated[Directory, Parameter(name=["output-data-dir", "-o"])]
+    | None = None,
+    outfile_prefix: Annotated[str, Parameter(name=["outfile-prefix", "-p"])] = "",
+):
+    """Merge all the smartmooring (SMD) files in a directory and generate output files for each instrument.
 
+    Parameters
+    ----------
+    raw_data_dir
+        The existing directory where all the \\*_SMD.csv files are.
+    output_data_dir
+        The directory to which to save the per-instrument merged data files. If not
+        provided, a "smartmooring" subdirectory will be created in `raw_data_data` and
+        this location will be used.
+    outfile_prefix
+        Prefix to apply to output file names. Default is "" (nothing).
 
-def usage_err():
-    cli_err("Usage: %s sm_data_dir [-o sm_out_dir] [-p outfile_prefix]", SCRIPTNAME)
-
-
-def cli():
-    if len(sys.argv) < 2 or sys.argv[1] in ["-h", "--help"]:
-        usage_err()
-    in_dir = Path(sys.argv[1])
-    out_dir = in_dir / "smartmooring"
-    sm_prefix = ""
-    if "-o" in sys.argv:
-        flag_idx = sys.argv.index("-o")
-        if flag_idx + 1 >= len(sys.argv):
-            usage_err()
-        out_dir = Path(sys.argv[flag_idx + 1])
-    if "-p" in sys.argv:
-        flag_idx = sys.argv.index("-p")
-        if flag_idx + 1 >= len(sys.argv):
-            usage_err()
-        sm_prefix = sys.argv[flag_idx + 1]
-    merged_smd_data = parse_and_merge_all_SMD_files(in_dir)
-    write_smd_results(out_dir, merged_smd_data, sm_prefix)
+    """
+    if output_data_dir is None:
+        output_data_dir = raw_data_dir / "smartmooring"
+    merged_smd_data = parse_and_merge_all_SMD_files(raw_data_dir)
+    write_smd_results(output_data_dir, merged_smd_data, outfile_prefix)
 
 
 if __name__ == "__main__":
-    try:
-        cli()
-    except Exception:
-        logger.exception("There was an error running %s.", SCRIPTNAME)
+    from cyclopts import App
+
+    app = App(name="smartmooring")
+    app.default(main)
