@@ -1,20 +1,19 @@
 import logging
-import sys
 from itertools import repeat
 from pathlib import Path
 from typing import Annotated, NamedTuple
 
 import pandas as pd
-from cyclopts import Parameter
+from cyclopts import App, Parameter
 from cyclopts.types import Directory, ExistingDirectory
-
-SCRIPTNAME = Path(__file__).name
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 LOC_FNAME = "location.csv"
+
+app = App(name="spotter-location-parser", help_on_error=True)
 
 
 class EpochRange(NamedTuple):
@@ -139,8 +138,10 @@ def write_merged_loc_data(out_dir: Path, df: pd.DataFrame):
     df.rename(columns=colnames).to_csv(csv_path, float_format="%.8f", index=False)
 
 
+@app.default
 def main(
     raw_data_dir: ExistingDirectory,
+    /,
     output_data_dir: Annotated[Directory, Parameter(name=["output-data-dir", "-o"])]
     | None = None,
     min_datetime: Annotated[str | None, Parameter(name=["min-datetime", "-n"])] = None,
@@ -183,8 +184,4 @@ def main(
 
 
 if __name__ == "__main__":
-    from cyclopts import App
-
-    app = App(name="location_pd")
-    app.default(main)
     app()

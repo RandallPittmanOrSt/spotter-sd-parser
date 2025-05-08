@@ -155,25 +155,33 @@ Major Updates:
 
 import os
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal
 
-from cyclopts.types import ExistingDirectory
+from cyclopts import App, Parameter
+from cyclopts.types import Directory, ExistingDirectory
 
 from spotter_sd_parser.concat import cat
 from spotter_sd_parser.parsing import parseLocationFiles, parseSpectralFiles
 from spotter_sd_parser.spectrum import Spectrum
 from spotter_sd_parser.versions import getVersions
 
+app = App("spotter-sd-parser", help_on_error=True)
 
+
+@app.default
 def main(
-    path: ExistingDirectory = Path(),
-    outpath: ExistingDirectory | None = None,
-    outputFileType: Literal["CSV", "matlab", "numpy", "gz"] = "CSV",
+    raw_data_dir: ExistingDirectory,
+    /,
+    output_data_dir: Annotated[
+        Directory | None,
+        Parameter(name=["output-data-dir", "-o"], name_transform=lambda s: s),
+    ] = None,
+    output_file_type: Literal["CSV", "matlab", "numpy", "gz"] = "CSV",
     spectra: str = "all",
     suffixes: list[str] | None = None,
     parsing: list[str] | None = None,
-    lfFilter=False,
-    bulkParameters=True,
+    lfFilter: Annotated[bool, Parameter(negative="")] = False,
+    bulkParameters: bool = True,
 ):
     """
     Combine selected SPOTTER output files into CSV files.
@@ -183,32 +191,36 @@ def main(
 
     Inputs
     ------
-    path : str
-        Path to a directory containing the Spotter data SD card data files
-    outpath : str
-        Path to a directory in which the concatenated and processed data should be saved
-    outputFileType : str
+    raw_data_dir
+        Path to a directory containing the Spotter data SD card data files.
+    output_data_dir
+        Path to a directory in which the concatenated and processed data should be saved.
+        Default is to place processed data in a "parsed" subfolder of `raw_data_dir`.
+    output_file_type
         CSV is the default. Alternatives are matlab, numpy, and gz.
-    spectra : str
+    spectra
         To just output one spectra, specify it. Options are Szz, a1, b1, a2, b2, Sxx, Syy,
         Qxz, Qyz, Cxy. Default is 'all' for all.
-    suffixes : list of str, optional
-        Suffixes to parse. Default is to parse all.
-    parsing : list of str, optional
+    suffixes
+        List of suffixes to parse. (For CLI provide a comma-separated string.) Default is
+        to parse all.
+    parsing
         Suffixes to postprocess. Default is all.
-    lfFilter : bool
+    lfFilter
         Should a low-frequency filter be done on the spectral files? Default is False.
-    bulkParameters : bool
+    bulkParameters
         Should the bulk spectral parameters be calculated? Default is True.
 
     """
     # If no path given, assume current directory
-    path = Path(path).absolute()
+    raw_data_dir = raw_data_dir.absolute()
     # If no outpath given, assume same as path
-    outpath = Path(outpath).absolute() if outpath else path
+    output_data_dir = (
+        output_data_dir.absolute() if output_data_dir else raw_data_dir / "parsed"
+    )
 
     # Check the version of Files
-    versions = getVersions(path)
+    versions = getVersions(raw_data_dir)
 
     # The filetypes to concatenate
     if suffixes is None:
@@ -234,7 +246,7 @@ def main(
         outputSpectra = [spectra]
 
     for index, version in enumerate(versions):
-        outd = Path(outpath, str(index)) if len(versions) > 1 else outpath
+        outd = Path(output_data_dir, str(index)) if len(versions) > 1 else output_data_dir
         outd.mkdir(parents=True, exist_ok=True)
         # if there is only a single version- we allow all files to be parsed. this is a
         # clutch to account for the fact that sys files are not garantueed to be written.
@@ -249,7 +261,7 @@ def main(
             print(f"Concatenating all {suffix} files:")
             if not (
                 cat(
-                    path=path,
+                    path=raw_data_dir,
                     outputFileType="CSV",
                     Suffix=suffix,
                     output_file_path=file_path,
@@ -268,7 +280,7 @@ def main(
                         input_file_path=file_path,
                         kind=suffix,
                         output_file_path=file_path,
-                        outputFileType=outputFileType,
+                        outputFileType=output_file_type,
                         versionNumber=version["number"],
                         IIRWeightType=version["IIRWeightType"],
                     )
@@ -278,7 +290,7 @@ def main(
                     parseSpectralFiles(
                         input_file_path=file_path,
                         output_dir=outd,
-                        outputFileType=outputFileType,
+                        outputFileType=output_file_type,
                         outputSpectra=outputSpectra,
                         lfFilter=lfFilter,
                         versionNumber=version["number"],
@@ -294,10 +306,4 @@ def main(
 
 
 if __name__ == "__main__":
-    # The usual entry point is spotter_sd_parer.cli:app(), but this module can be called
-    # too:
-    from cyclopts import App
-
-    app = App()
-    app.default(main)
     app()

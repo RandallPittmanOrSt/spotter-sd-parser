@@ -12,7 +12,9 @@ dependencies = [
 ]
 
 [project.scripts]
-spotter-sd-parser = "spotter_sd_parser.cli:app"
+spotter-sd-parser = "spotter_sd_parser.sd_file_parser:app"
+spotter-smartmooring-parser = "spotter_sd_parser.smartmooring:app"
+spotter-location-parser = "spotter_sd_parser.location_pd:app"
 
 [dependency-groups]
 dev = [

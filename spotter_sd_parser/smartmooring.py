@@ -12,6 +12,8 @@ import pandas as pd
 from cyclopts import App, Parameter
 from cyclopts.types import Directory, ExistingDirectory
 
+app = App(name="spotter-smartmooring-parser", help_on_error=True)
+
 SCRIPTNAME = Path(__file__).name
 
 logger = logging.getLogger(__name__)
@@ -325,11 +327,13 @@ def write_merged_smd_data(outdir: Path, merged_smd_data: SMDData):
         mod_data.to_csv(mod_fname, **to_csv_kwargs)
 
 
+@app.default
 def main(
     raw_data_dir: ExistingDirectory,
     /,
-    output_data_dir: Annotated[Directory, Parameter(name=["output-data-dir", "-o"])]
-    | None = None,
+    output_data_dir: Annotated[
+        Directory | None, Parameter(name=["output-data-dir", "-o"])
+    ] = None,
     min_datetime: Annotated[str | None, Parameter(name=["min-datetime", "-n"])] = None,
     max_datetime: Annotated[str | None, Parameter(name=["max-datetime", "-x"])] = None,
 ):
@@ -364,8 +368,4 @@ def main(
 
 
 if __name__ == "__main__":
-    from cyclopts import App
-
-    app = App(name="smartmooring_pd")
-    app.default(main)
     app()
