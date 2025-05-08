@@ -368,3 +368,4 @@ if __name__ == "__main__":
 
     app = App(name="smartmooring_pd")
     app.default(main)
+    app()
