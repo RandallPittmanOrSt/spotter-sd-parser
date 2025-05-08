@@ -350,8 +350,6 @@ def main(
     max_datetime
         Maximum date/time to keep in output. May be provided as any string that can be
         interpreted by pandas.Timestamp(). Naive values are assumed to be UTC.
-    nproc
-        Number of processes to use for parsing. Defaults to the value of os.cpu_count().
     """
     if output_data_dir is None:
         output_data_dir = raw_data_dir / "smartmooring"
