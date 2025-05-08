@@ -342,8 +342,8 @@ def main(
         The existing directory where all the \\*_SMD.csv files are.
     output_data_dir
         The directory to which to save the per-instrument merged data files. If not
-        provided, a "smartmooring" subdirectory will be created in `raw_data_data` and
-        this location will be used.
+        provided, a "parsed/smartmooring" subdirectory will be created in `raw_data_data`
+        and this location will be used.
     min_datetime
         Minimum date/time to keep in output. May be provided as any string that can be
         interpreted by pandas.Timestamp(). Naive values are assumed to be UTC.
@@ -352,7 +352,7 @@ def main(
         interpreted by pandas.Timestamp(). Naive values are assumed to be UTC.
     """
     if output_data_dir is None:
-        output_data_dir = raw_data_dir / "smartmooring"
+        output_data_dir = raw_data_dir / "parsed" / "smartmooring"
     min_epoch_t = pd.Timestamp(min_datetime).timestamp() if min_datetime else None
     max_epoch_t = pd.Timestamp(max_datetime).timestamp() if max_datetime else None
     epoch_range = EpochRange(min_epoch_t, max_epoch_t)
