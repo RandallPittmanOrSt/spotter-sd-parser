@@ -141,7 +141,7 @@ def write_merged_loc_data(out_dir: Path, df: pd.DataFrame):
 
 def main(
     raw_data_dir: ExistingDirectory,
-    output_data_dir: Annotated[Directory, Parameter(name=["output-data-dir", "-d"])]
+    output_data_dir: Annotated[Directory, Parameter(name=["output-data-dir", "-o"])]
     | None = None,
     min_datetime: Annotated[str | None, Parameter(name=["min-datetime", "-n"])] = None,
     max_datetime: Annotated[str | None, Parameter(name=["max-datetime", "-x"])] = None,
