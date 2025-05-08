@@ -78,6 +78,6 @@ def add_timecols_to_df(
     df = df[cols[-7:] + cols[:-7]]
     return (
         df,
-        ("year", "month", "day", "hourminute", "second", "millisecond"),
+        ("year", "month", "day", "hour", "minute", "second", "millisecond"),
         ("%4d", "%2d", "%2d", "%2d", "%2d", "%2d", "%3d"),
     )
