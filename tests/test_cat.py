@@ -5,6 +5,7 @@ test the concatenation function of parser
 """
 
 import os
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -16,8 +17,10 @@ class CatTest(unittest.TestCase):
     def testCatSst(self):
         for suffix in self.suffixes:
             # just SST right now
-            outputFileName = os.path.join(self.outputpath, self.outFiles[suffix] + ".csv")
-            result = cat(path=self.inputpath, Suffix=suffix)
+            output_file_path = Path(self.outputpath, f"{self.outFiles[suffix]}.csv")
+            result = cat(
+                path=self.inputpath, output_file_path=output_file_path, Suffix=suffix
+            )
 
     def setUp(self):
         """
@@ -48,12 +51,9 @@ class CatTest(unittest.TestCase):
         """
         delete temporary output file(s)
         """
-        # if os.path.exists( self.outputfn ):
-        #     print(f"removing {self.outputfn}")
-        #     os.remove(self.outputfn)
-        # if os.path.exists(self.outputpath):
-        #     print(f"cleanup: deleting {self.outputpath}")
-        #     shutil.rmtree(self.outputpath)
+        if os.path.exists(self.outputpath):
+            print(f"cleanup: deleting {self.outputpath}")
+            shutil.rmtree(self.outputpath)
 
 
 if __name__ == "__main__":
