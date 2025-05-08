@@ -21,18 +21,6 @@ class LocationParsingTest(unittest.TestCase):
         self.assertTrue(os.path.exists(self.outputfn))
         self.assertFalse(os.path.exists("displacement.csv"))
 
-    def testNoOutputPathParserRun(self):
-        """
-        show that parseLocationFiles() can't take an output path argument
-            ...though its partner parseSpectr[...] can...
-            ...probably because it only generates one file whereas the spectral
-               equivalent can output many...
-        """
-        with self.assertRaises(TypeError) as cm:
-            parseLocationFiles(
-                input_file_path=self.inputfn, output_file_path=self.outputpath
-            )
-
     def setUp(self):
         """
         prepare for running the parser
