@@ -29,21 +29,9 @@ def parse_spotter_files(
     versions = getVersions(input_path)
 
     # The filetypes to concatenate
-    file_types = [
-        "FLT",
-        "SPC",
-        "SYS",
-        "LOC",
-        "GPS",
-        "SST",
-    ]
+    file_types = ["FLT", "SPC", "SYS", "LOC", "GPS", "SST"]
 
-    parsing = [
-        "FLT",
-        "SPC",
-        "LOC",
-        "SST",
-    ]
+    parsing = ["FLT", "SPC", "LOC", "SST"]
 
     if any(version["number"] < 3 for version in versions):
         print(
