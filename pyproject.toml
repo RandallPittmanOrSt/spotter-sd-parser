@@ -1,0 +1,30 @@
+[project]
+name = "spotter-sd-parser"
+version = "2026.10.19.dev0"
+description = "An open-source tool for concatenating and parsing SD card data from Spotters."
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Tim Johnson" },
+    { name = "Anna Savage" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "numpy",
+    "pandas",
+    "scipy",
+]
+
+[project.scripts]
+spotter-sd-parser = "spotter_sd_parser:main"
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "pytest-mock",
+    "ruff>=0.17.1",
+]
+
+[tool.ruff]
+line-length = 90
