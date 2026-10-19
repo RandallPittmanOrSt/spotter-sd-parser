@@ -55,38 +55,23 @@ def parse_spotter_files( input_path = None , output_path=None, output_format='CS
                        'LOC':'location','GPS':'gps','SST':'sst'}
 
     if input_path is None:
-        #
         # If no path given, assume current directory
-        #
         input_path = os.getcwd()
-        #
     else:
-        #
         input_path = os.path.abspath(input_path)
-        #    
     
     if output_path is None:
-        #
         output_path = os.path.join(input_path, 'processed')
-        #
     else:
         output_path =  os.path.abspath(output_path)
-        #
-    #
 
     #Which spectra to process
     if spectra=='all':
-        #
         outputSpectra = ['Szz','a1','b1','a2','b2','Sxx','Syy','Qxz','Qyz','Cxy']
         if include_n_channel:
             outputSpectra.extend(['Snn', 'Czn'])
-        #
     else:
-        #
         outputSpectra = [spectra]
-        #
-    #
-    #
     # Loop over versions
     outp = output_path
     if len(versions) == 1:
@@ -98,58 +83,37 @@ def parse_spotter_files( input_path = None , output_path=None, output_format='CS
         # a lot of fragile logic.
         versions[0]['fileNumbers'] = None
 
-    #
     for index,version in enumerate(versions):
-        #
         if len(versions) > 1:
-            #
             # When there are multiple conflicting version, we push output
             # to different subdirectories
-            #
             output_path = os.path.join( outp,str(index) )
-            #
         else:
-            #            
             output_path = outp
-            #
-        #
             
         if not os.path.exists(output_path):
-            #
             os.makedirs(output_path)
-            #
-        #            
 
         for suffix in file_types:
-            #
             fileName = os.path.join( output_path , outFiles[suffix] + '.csv' )
-            # 
+            
             # For each filetype, concatenate files to intermediate CSV files...
-
             print( 'Concatenating all ' + suffix + ' files:')
             if not (cat(path=input_path, outputFileType='CSV',Suffix=suffix,
                     outputFileName=fileName,
                     versionFileList=version['fileNumbers'])):
-                #
                 continue
-                #
-            #
             
-            #
             # ... once concatenated, process files further (if appropriate)
-            #
             if suffix in parsing:
-                #
                 if suffix in [
                     'FLT',
                     'LOC',
                     'GPS',
                     'SST',
                 ]:
-                    #
                     #parse the mean location/displacement files; 
                     #this step transforms unix epoch to date string.
-                    #
                     try:
                         parseLocationFiles(inputFileName = fileName, kind=suffix,
                             outputFileName = fileName,
@@ -160,9 +124,7 @@ def parse_spotter_files( input_path = None , output_path=None, output_format='CS
                     except OSError as e:
                         print(f"Error in parseLocationFiles() while parsing {fileName}: {e}")
                         raise
-                    #
                 elif suffix in ['SPC']:
-                    #
                     #parse the mean location/displacement files; this step 
                     #extract relevant spectra (Szz, Sxx etc.) from the bulk 
                     #spectral file
@@ -174,17 +136,12 @@ def parse_spotter_files( input_path = None , output_path=None, output_format='CS
                                 include_n_channel=include_n_channel,
                                 versionNumber=version['number'])
                     os.remove( fileName )
-                    #
-                #
             #parsing
-            #
         #suffix
-        #
         # Generate bulk parameter file
         spectrum = Spectrum(path=output_path,outpath=output_path)
         spectrum.generate_text_file()
     #Versions
-    #
     print("Done. Processed data saved in : " + output_path )
     return output_path
 
@@ -208,7 +165,6 @@ class Spectrum:
         self._none = None
         self.time  = None
         for key in self._parser_files:
-            #
             # Check which output from the parser is available
             if os.path.isfile(os.path.join(self.path,self._parser_files[key])):
 
@@ -265,7 +221,6 @@ class Spectrum:
 
 
     def _load_parser_output( self ):
-        #
         for key in self._parser_files:
             if self._file_available[key]:
                 data = np.loadtxt( os.path.join(self.path,self._parser_files[key]) , delimiter=',' )
@@ -384,7 +339,6 @@ class Spectrum:
             file.write(header)
             format = '%d, ' * 7 + '%6.2f, ' * 6 + '%6.2f \n'
             for ii in range( 0 , len(hm0)):
-                #
                 string = format % ( self.time[ii,0], self.time[ii,1],  self.time[ii,2],
                                     self.time[ii,3],self.time[ii,4],self.time[ii,5],
                                     self.time[ii,6],hm0[ii],tm01[ii],tp[ii],
@@ -405,7 +359,6 @@ supportedVersions    = {'1446ABC':'1.2.5','9BEADBE':'1.3.0','2FDC90':'1.4.1',
 #number assigned to each release, and compatibility number (each release
 #    gets a new number, and shares a compatibility number with all releases
 #    that can be concatenated in single output files.
-#
 ordinalVersionNumber = {'1446ABC':(0,0),'9BEADBE':(1,0),'2FDC90':(2,1),
                         '928D2AE':(0,0),'340b03f':(3,1),'82755AE':(3,1),
                         'B218FBD':(4,2),'E52AC4D':(5,2),'1323D38':(6,2),
@@ -415,16 +368,12 @@ ordinalVersionNumber = {'1446ABC':(0,0),'9BEADBE':(1,0),'2FDC90':(2,1),
                         '2569BD17':(16,2),'81C1B398':(17,2),'93CE0B95':(18,2),
                         'FE6412C3':(19,3)
                         }
-#
 # The default version number is used by spectral and location parsing routines
 # as default compatibility number if none is given
-#
 defaultVersion       = 0
 defaultIIRWeightType = 0
-#
 #Phase correction by applying the IIR to the reversed
 # signal
-#
 applyPhaseCorrection                  = True
 applyPhaseCorrectionFromVersionNumber = 2
 
@@ -448,25 +397,17 @@ def parseLocationFiles( inputFileName=None, outputFileName='displacement.CSV',
     a Spotter into one datastructure and saves the result as a CSV file 
     (*outputFileName*).
     """
-    #
 
     fname,ext = os.path.splitext(outputFileName)
     outputFileName = fname + '.' + extensions(outputFileType)
 
-    #
     # Load location data into a pandas dataframe object
     if reportProgress:
-        #
         print(f"Processing Spotter output - {kind}")
-        #
-    #        
 
-    #
     header = 'year,month,day,hour,min,sec,msec'
     if kind=='FLT':
-        #
         # Read the data using pandas, and convert to numpy
-        #
         usecols = (1,2,3,4)
         if include_n_channel:
             try:
@@ -502,17 +443,11 @@ def parseLocationFiles( inputFileName=None, outputFileName='displacement.CSV',
         else:
             data = data[:,1:4]/1000.
             n_dims = 3
-        #
         # Apply phase correction to displacement data
-        #
         if applyPhaseCorrection and versionNumber>=applyPhaseCorrectionFromVersionNumber:
-            #
             print('- IIR phase correction using weight type: ', str(IIRWeightType ) )
             for ii in range(0,n_dims):
-                #
                 data[:,ii] = applyfilter( data[:,ii] , 'backward' , versionNumber, IIRWeightType )
-                #
-            #        
         data        = np.concatenate( (datetime,data) , axis=1 )
 
         if include_n_channel:
@@ -522,9 +457,7 @@ def parseLocationFiles( inputFileName=None, outputFileName='displacement.CSV',
             fmt = '%i,'*7  + '%.5e,%.5e,%.5e'
             header=header+', x (m), y(m), z(m)'
     elif kind=='SST':
-        #
         # Read the data using pandas, and convert to numpy
-        #
         data = pd.read_csv(inputFileName,
                            index_col=False, usecols=(0, 1))
         data = data.apply(pd.to_numeric,errors='coerce')
@@ -539,10 +472,7 @@ def parseLocationFiles( inputFileName=None, outputFileName='displacement.CSV',
         fmt = '%i,' * 7 + '%5.2f'
         header = header + ', T (deg. Celsius)'
     elif kind=='GPS':
-        #
         # DEBUG MODE GPS
-        #
-        #
         data = pd.read_csv( inputFileName ,
                 index_col=False , usecols=(1,2,3,4,5,6,7,8,9))
         data = data.apply(pd.to_numeric,errors='coerce')
@@ -557,10 +487,7 @@ def parseLocationFiles( inputFileName=None, outputFileName='displacement.CSV',
         fmt = '%i,'*7 +'%13.8f' * 5 + '%13.8f'
         header=header+', latitude (decimal degrees),longitude (decimal ' + \
             'degrees),elevation (m),SOG (mm/s),COG (deg*1000),Vert Vel (mm/s)'
-        #        
-        #
     else:
-        #
         data = pd.read_csv( inputFileName ,
                 index_col=False , usecols=(0,1,2,3,4))
         data = data.apply(pd.to_numeric,errors='coerce')
@@ -576,21 +503,13 @@ def parseLocationFiles( inputFileName=None, outputFileName='displacement.CSV',
 
         fmt = '%i,'*7 +'%13.8f,%13.8f'
         header=header+', latitude (decimal degrees),longitude (decimal degrees)'
-        #
-    #
     if outputFileType.lower() in ['csv','gz']:
-        #
         np.savetxt(outputFileName ,
             data ,fmt=fmt,
             header=header)
-        #
-        #
     elif outputFileType.lower()=='matlab':
-        #
         # To save to matlab .mat format we need scipy
-        #
         try:            
-            #
             if kind=='FLT':
                 n_filt_cols_no_n = 10
                 matlab_data = {
@@ -616,16 +535,10 @@ def parseLocationFiles( inputFileName=None, outputFileName='displacement.CSV',
                     {'Lat':data[:,7].astype(np.float32),
                      'Lon':data[:,8].astype(np.float32),
                   'time':data[:,0:7].astype(np.int16)} )                
-            #
         except ImportError:
-            #
             raise Exception('To save as a matfile Scipy needs to be installed')
-            #
-        #
     elif outputFileType.lower()=='numpy':
-        #
         if kind=='FLT':
-            #
             np_data = {
                 'x':data[:,7].astype(np.float32),
                 'y':data[:,8].astype(np.float32),
@@ -635,19 +548,13 @@ def parseLocationFiles( inputFileName=None, outputFileName='displacement.CSV',
             if include_n_channel and data.shape[1] > 10:
                 np_data['n'] = data[:,10].astype(np.float32)
             np.savez(outputFileName, **np_data)
-            #
         else:
-            #
             np.savez( outputFileName ,
                 lat=data[:,7].astype(np.float32),
                 lon=data[:,8].astype(np.float32),
                 time=data[:,0:7].astype(np.int16) )
-            #
-        #
     #endif
-    #
     return( None )
-    #
 #end def
 
 def epochToDateArray( epochtime ):
@@ -655,7 +562,6 @@ def epochToDateArray( epochtime ):
     datetime   = np.array( [ list(time.gmtime(x))[0:6] for x in epochtime ])
     milis      = np.array( [ ( 1000 * (  x-np.floor(x) ) ) for x in epochtime ])
     return(np.concatenate( (datetime,milis[:,None]),axis=1))
-#
     
 
 def parseSpectralFiles( inputFileName=None, 
@@ -669,16 +575,14 @@ def parseSpectralFiles( inputFileName=None,
                         lf_filter = False,
                         include_n_channel=False,
                         versionNumber=defaultVersion):
-
-    #
-    # This functions loads all the Spectral data (located at *path*) from
-    # a Spotter into one datastructure and saves the result as a CSV file
-    # (*outputFileName*).
-    #
+    """Load all the Spectral data (located at *path*) from a Spotter into one
+    datastructure and save the result as a CSV file (*outputFileName*).
+    """
 
     def checkKeyNames(key,errorLocation):
-        # Nested function to make sure input is insensitive to capitals,
-        # irrelevant permutations (Cxz vs Czx), etc
+        """Make sure input is insensitive to capitals, irrelevant permutations
+        (Cxz vs Czx), etc
+        """
         if key.lower() == 'szz':
             out = 'Szz'
         elif key.lower() == 'syy':
@@ -717,47 +621,29 @@ def parseSpectralFiles( inputFileName=None,
     
     # Rename output file names for given variables if a dict is given
     if outputFileNameDict is not None:
-        #
         for key in outputFileNameDict:
-            #
             keyName = checkKeyNames(key,'output file names')
             outputFileName[ keyName ] = outputFileNameDict[ key ]
-            #
-        #
-    #
 
     for key in outputFileName:
-        #
         fname,ext = os.path.splitext(outputFileName[key])
         outputFileName[key] = fname + '.' + extensions(outputFileType)
-        #
-    #
         
     # The output files given by the script; per default only Szz is given, but
     # can be altered by user request
     if outputSpectra is None:
-        #
         outputSpectra = ['Szz']
-        #
     else:
-        #
         # For user requested output, make sure variables are known and have
         #correct case/permutations/etc.
         for index,key in enumerate(outputSpectra):
-            #
             keyName = checkKeyNames(key,'output list')
             outputSpectra[index] = keyName
-        #
-    #
     
 
-    #
     # Load spectral data into a pandas dataframe object
     if reportProgress:
-        #
         print('Processing Spotter spectral output')
-        #
-    #
     legacyStartColumnNumber = {'Szz':5  ,'Cxz':7,
                          'Qxz':13,'Cyz':8,
                          'Qyz':14,'Sxx':3,
@@ -777,7 +663,7 @@ def parseSpectralFiles( inputFileName=None,
     n_extended_spectra = 8 #sxx, syy, szz, snn, sxy, sxz, syz, szn
 
     def detect_spc_layout(path):
-        # Detect spectral layout from actual data rows.
+        """Detect spectral layout from actual data rows."""
         max_columns = 0
         with open(path, newline='') as f:
             reader = csv.reader(f)
@@ -853,20 +739,14 @@ def parseSpectralFiles( inputFileName=None,
     ensembleNum = tmp[:,2] * 2
     data = {}
     for key in startColumnNumber:
-        #
         # Convert to variance density and change units to m2/hz (instead
         # of mm^2/hz)
-        #
         data[key] = tmp[: , startColumnNumber[key]::stride ]/( 1000000. * df )
-        #
         # Set low frequency columns to NaN
-        #
         data[key][:,0:3] = np.nan
-        #
     # Calculate directional moments from data (if requested). Because these are
     # derived quantities these need to be included in the dataframe a-postiori
     if any( [ x in ['a1','b1','a2','b2'] for x in outputSpectra ] ):
-        #
         with np.errstate(invalid='ignore',divide='ignore'):
             #Supress divide by 0; silently produce NaN
             data['a1'] = data['Qxz'] / np.sqrt( ( data['Szz'] * (
@@ -877,60 +757,38 @@ def parseSpectralFiles( inputFileName=None,
                 data['Sxx'] + data['Syy'] ) ) )
             data['b2'] = 2. * data['Cxy'] /  (
                 data['Sxx'] + data['Syy'] )                      
-        #
 
         for key in ['a1','b1','a2','b2']:
-            #
             # If energies are zeros, numpy produces infinities
             # set to NaN as these are meaningless
-            #
             data[key][ np.isinf(data[key] ) ]= np.nan
             data[key][ np.isnan(data[key] ) ]= np.nan
-    #
 
     # Filter lf-noise
     if lf_filter:
         data = lowFrequencyFilter( data )
-        #
-    #
         
     for key in data:
-        #
         data[key] = np.concatenate( (datetime,
                                          ensembleNum[:,None],data[key]),axis=1 )
-        #
-    #
 
     # construct header for use in CSV
     header = 'year,month,day,hour,min,sec,milisec,dof'
     freq = np.array(list( range( 0 , nf ) )) * df
-    #
     for f in freq:
-        #        
         header = header +','+ str(f)
-        #    
-    #
         
-    #
     # write data to requested output format
-    #
     for key in outputSpectra:
-        #
         fmt = '%i , ' * 8 + ('%.3e , ' * (nf-1)) + '%.3e'
 
         if outputFileType.lower()=='csv':
-            #
             if outputFileType.lower() in ['csv','gz']:
-                #
                 np.savetxt(os.path.join( outputPath , outputFileName[key]) ,
                            data[key], fmt=fmt,
                            header=header)
-                #            
-            #
         elif outputFileType.lower()=='matlab':
-            #
             # To save to matlab .mat format we need scipy
-            #
             try:
                 mat = data[key]
                 savemat(
@@ -939,39 +797,26 @@ def parseSpectralFiles( inputFileName=None,
                         'time':mat[:,0:7].astype(np.int16),
                         'frequencies':freq.astype(np.float32),
                         'dof':mat[:,7].astype(np.int16) } )
-                #
             except ImportError:
-                #
                 raise Exception('Saving as a matfile requires Scipy')
-                #
-            #
         elif outputFileType.lower()=='numpy':
-            #
             mat = data[key]         
             np.savez(os.path.join( outputPath , outputFileName[key]),
                         spec=mat[:,8:].astype(np.float32),
                         time=mat[:,0:7].astype(np.int16),
                         frequencies=freq.astype(np.float32),
                         dof=mat[:,7].astype(np.int16) )
-            #
-        #
-    #
-    #
     return( None )
-    #
 #end def
 
 def lowFrequencyFilter( data ):
     '''
     function to perform the low-frequency filter
     '''   
-    #
     with np.errstate(invalid='ignore',divide='ignore'):
         # Ignore division by 0 etc (this is caught below)
         Gxz = (data['Cxz']**2 + data['Qxz']**2) / ( data['Sxx'] * data['Szz'] )
         Gyz = (data['Cyz']**2 + data['Qyz']**2) / ( data['Syy'] * data['Szz'] )
-        #
-    #
     phi = 1.5 * np.pi - np.arctan2( data['b1'] , data['a1'] )
     G   = ( np.sin( phi) **2 * Gxz + np.cos( phi) **2 * Gyz )
     G[ np.isnan(G)] = 0.
@@ -980,101 +825,59 @@ def lowFrequencyFilter( data ):
 
     names =  ['Szz','Cxz','Qxz','Cyz','Qyz','Sxx','Syy','Cxy','Qxy']
     for key in names:
-        #
         for jj in range( 0 , G.shape[0] ):
-            #
             data[ key ][ jj , 0 : I[jj] ] = \
               data[ key ][ jj , 0 : I[jj] ] * G[jj,0 : I[jj]]           
-            #
-        #
-    #
     return( data )
-    #
 #end def
 
 def getFileNames( path , suffix , message,versionFileList=None ):
-    #
-    # This function returns all the filenames in a given *path*
-    # that conform to ????_YYY.CSV where YYY is given by *suffix*.
-    #
+    """Return all the filenames in a given `path` that conform to '????_YYY.CSV' where
+    'YYY' is given by `suffix`.
+    """
     
     if path is None:
-        #
         # If no path given, assume current directory
-        #
         path = os.getcwd()
-        #
     else:
-        #
         path = os.path.abspath(path)
-        #
-    #
 
         
     synonyms = [suffix]
     if suffix == 'LOC':
-        #
         synonyms.append('GPS')
-        #
-    #
     # Get the file list from the directory, and select only those files that
     # match the Spotter output filename signature
-    #
 
     if versionFileList is not None:
-        #
         # Only add filenames that are in the present version file number list
-        #
         fileNames = []
         for filename in sorted(os.listdir(path)):
-            #
             if (fnmatch.fnmatch(filename, '????_' + suffix + '.CSV') or
                 fnmatch.fnmatch(filename, '????_' + suffix + '.csv') or
                 fnmatch.fnmatch(filename, '????_' + suffix + '.log')):
-                #
                 num , ___ = filename.split('_')
                 num = num.strip()
                 if num in versionFileList:
-                    #
                     fileNames.append(filename)
-                    #
-                #
-            #
-        #
     else:
-        #
         fileNames =  [ filename for filename in sorted(os.listdir(path))
                        if
                        (fnmatch.fnmatch(filename, '????_' + suffix + '.CSV') or
                         fnmatch.fnmatch(filename, '????_' + suffix + '.csv') or
                         fnmatch.fnmatch(filename, '????_' + suffix + '.log'))]
-    #
     # Are there valid Spotter files?
-    #    
     if len( fileNames ) < 1:
-        #
         # No files found; raise exception and exit
-        #
         print('  No ' + message + ' data files available.')
-        #
-    #
     return( path , fileNames )
-    #
-#
 
 def extensions( outputFileType ):
-    #
     ext = {'csv':'csv','matlab':'mat','numpy':'npz','pickle':'pickle','gz':'gz'}
     if outputFileType.lower() in ext:
-        #
         return( ext[outputFileType.lower()] )
-        #
     else:
-        #
         raise ValueError('Unknown outputFileType; options are: numpy , matlab , pickle , csv')
-        #
-    #
-#
 class missingFLTFile(Exception):
     pass
 
@@ -1085,19 +888,16 @@ def cat( path = None, outputFileName = 'displacement.CSV', Suffix='FLT',
     file it retains the header. Note that for SPEC files special
     processing is done.
     """
-    #
 
     def modeDetection( input_path , filename ):
-        #
-        # Here we detect if we are in debug or in production mode, we do this
-        # based on the first few lines; in debug these will contain either
-        # FFT or SPEC, whereas in production only SPECA is encountered
+        """Detect if we are in debug or in production mode based on the first few lines;
+        in debug these will contain either FFT or SPEC, whereas in production only SPECA
+        is encountered.
+        """
         mode = 'production'
         with open(os.path.join( input_path,filename) ) as infile:
-            #
             jline = 0 
             for line in infile:
-                #
                 if ( line[0:3]=='FFT' or line[0:5]=='SPEC,'):
                     mode = 'debug'
                     break
@@ -1108,127 +908,82 @@ def cat( path = None, outputFileName = 'displacement.CSV', Suffix='FLT',
         return(mode)
     
     def find_nth(haystack, needle, n):
-        #
-        # Function to find nth and nth-1 occurrences of a needle in the haystack
-        #
+        """Find nth and nth-1 occurrences of a needle in the haystack"""
         start = haystack.find(needle)
         prev  = start
         while start >= 0 and n > 1:
-            #
             prev  = start
             start = haystack.find(needle, start+len(needle))
             n -= 1
-            #
         return (start,prev)
-        #
     #end nested function
-    #        
-    #
     # Get a list of location filenames and the absolute path 
     path , fileNames = getFileNames( path=path , suffix=Suffix,
                         message='_'+Suffix,versionFileList=versionFileList )
-    #
     if len(fileNames) == 0:
         return False
     
     fname,ext = os.path.splitext(outputFileName)
     outputFileName = fname + '.' + extensions(outputFileType)
-    #
     compress = outputFileType.lower()=='gz'
 
     if compress:
-        #
         outfile = gzip.open(outputFileName,'wb')
-        #
     else:
-        #
         outfile = open(outputFileName,'w')
-        #
-    #
-    #    
-    #
     for index,filename in enumerate(fileNames):
-        #
         if reportProgress:
-            #
             print( '- ' + filename + ' (File {} out of {})'.format(
                 index+1, len(fileNames) ) )
-            #
-        #
         
         if Suffix == 'SPC':
-            #
             ip = 0
             prevLine = ''
             mode = modeDetection( path, filename)
-            #
 
             with open(os.path.join( path,filename) ) as infile:
                 try:        #
                     #lines = infile.readlines()
                     ii = 0
                     line = infile.readline()
-                    #
                     if index==0:
-                        #
                         outfile.write(line)
 
                     for line in infile:
-                        #
                         # Read the ensemble counter
                         if (line[0:8]=='SPEC_AVG' or line[0:5]=='SPECA'
                                  or line[0:8]=='SPECA_CC'):
                             a,b=find_nth(line, ',', 5)
                             ii = int(line[b+1 : a])
-                            #
 
                             if mode=='production':
-                                #
                                 outfile.write(line)
                                 ip       = ii
-                                #
                             else:
-                                #
-                                #
                                 # Debug spectral file, contains all averages,
                                 # only need last.
-                                #
                                 if line[0:8]=='SPECA_CC':
-                                    #
                                     outfile.write(line)
                                     ip = 0
-                                    #
                                 elif ii < ip:
-                                    #
                                     outfile.write(prevLine)
                                     ip = 0
-                                    #
                                 else:
-                                    #
                                     ip       = ii
                                     prevLine = line
-                                    #
                                 #end if
-                                #
                             #end if
-                            #
                         #end if
-                        #
                     #end for line
-                    #
                 except Exception as e:
                     message = "- ERROR:, file " + os.path.join( path,filename) + " is corrupt"
                     log_errors(message)
                     print(message )
             #end with
-            #
         else:
-            #
             # Suffix is not 'SPC'
-            #
             fqfn = os.path.join(path, filename)
             with open(fqfn) as infile:
-                #
                 line_num = 0
                 try:
                     for line in infile:
@@ -1260,43 +1015,27 @@ def cat( path = None, outputFileName = 'displacement.CSV', Suffix='FLT',
 
     
 def validCommandLineArgument( arg ):
-    #
     out = arg.split('=')
 
     if not (len(out) == 2):
-        #
         print('ERROR: Unknown commandline argument: ' + arg)
         sys.exit()
-        #
     key,val = out
     
     if key.lower() in ['path']:
-        #
         key = 'path'
-        #
     elif  key.lower() in ['outputfiletype']:
-        #
         key = 'outputFileType'
-        #
     elif key.lower() in ['spectra']:
-        #
         key = 'spectra'
-        #
     elif key.lower() in ['lffilter']:
-        #
         key = 'lfFilter'
-        #
     elif key.lower() in ['bulkparameters']:
-        #
         key = 'bulkParameters'
-        #
     else:
-        #
         print('ERROR: unknown commandline argument ' + key)
         sys.exit()
-        #
     return( key,val)
-    #
 
 def getVersions( path ):
     """
@@ -1309,35 +1048,22 @@ def getVersions( path ):
     
     # Get sys files
     path,fileNames = getFileNames( path , 'SYS' , 'system' )
-    #
     def latestVersion():
-        #
         ordinal = - 1
         for key in ordinalVersionNumber:
-            #
             if ordinalVersionNumber[key][1] > ordinal:
-                #
                 latVer = key
-                #
-            #
-        #
         return(latVer)
-        #
     #end def
-    #
     first = True
     version = []
-    #
     # Loop over all the _SYS files
     for index,filename in enumerate(fileNames):
-        #        
         foundSha = False
         foundIIRWeightType = False
         IIRWeightType = defaultIIRWeightType
-        #
         #Check if there is a sha in first 80 lines
         with open(os.path.join( path,filename) ) as infile:
-            #
             jline = 0
             for line in infile:
                 if 'SHA' in line:
@@ -1348,30 +1074,19 @@ def getVersions( path ):
                     ___ , IIRWeightType = line.split(':')
                     IIRWeightType = int(IIRWeightType.strip())
                     foundIIRWeightType = True
-                    #
                 jline += 1
                 if (foundSha and foundIIRWeightType) or jline>80:
-                    #
                     break
-                #
-        #
         # If we found a SHA, check if it is valid
         if foundSha:
-            #
             # Is it a valid sha? 
-            #                
             if not sha in ordinalVersionNumber:
-                #
                 # If not - parse using the latest version
                 sha = latestVersion()
-            #
 
-        #
         #Valid sha, so what to do?
         if foundSha and first:
-            #
             # this the first file, and we found a sha
-            #
             version.append( {'sha':[sha],
                              'version':[supportedVersions[sha]],
                              'ordinal':[ordinalVersionNumber[sha]],
@@ -1379,9 +1094,7 @@ def getVersions( path ):
                              'IIRWeightType':IIRWeightType,
                              'fileNumbers':[] })
             first = False            
-            #
         elif not foundSha and first:
-            #
             # this is the first file, but no sha - we will try to continue
             # under the assumption that the version corresponds to the
             # latest version - may lead to problems in older version
@@ -1394,26 +1107,18 @@ def getVersions( path ):
                              'IIRWeightType':IIRWeightType,
                              'fileNumbers':[] })
             first = False
-            #
         elif foundSha and not first:
-            #
             # We found a new sha, check if it is the same as previous found sha
             # and if so just continue
-            #
             if not ( sha in version[-1]['sha'] and version[-1]['IIRWeightType']==IIRWeightType) :
-                #
                 # if not, check if this version is compatible with the previous
                 # found version
                 if ordinalVersionNumber[sha][1] == version[-1]['number'] and version[-1]['IIRWeightType']==IIRWeightType:
-                    #
                     # If so, append the sha/version
-                    #
                     version[-1]['sha'].append(sha)
                     version[-1]['ordinal'].append(ordinalVersionNumber[sha])
                     version[-1]['version'].append(supportedVersions[sha])
-                    #
                 else:
-                    #
                     # Not Compatible, we add a new version to the version list
                     # that has to be processed seperately
                     version.append( {'sha':[sha],
@@ -1422,21 +1127,13 @@ def getVersions( path ):
                                      'number':ordinalVersionNumber[sha][1],
                                      'IIRWeightType':IIRWeightType,
                                      'fileNumbers':[] })
-                    #                             
-                #
-            #
-        #
         entry , ___ = filename.split('_')
-        #
         # Add file log identifier (e.g. 0009_????.csv, with entry = '0009')
-        #
-        #
         version[-1]['fileNumbers'].append( entry )                        
-        #
     #end for filenames
-    #
     return version
-#
+
+
 def filterSOS(versionNumber, IIRWeightType):
     """
     Get second-order sections coefficients for IIR filter based on version and weight type.
@@ -1503,38 +1200,26 @@ def filterSOS(versionNumber, IIRWeightType):
 
 
 def applyfilter( data , kind , versionNumber, IIRWeightType ):
-    #
-    # Apply forward/backward/filtfilt sos filter
-    #
+    """Apply forward/backward/filtfilt sos filter."""
     # Get SOS coefficients
     sos = filterSOS( versionNumber,IIRWeightType)
-    #
     if kind=='backward':
-        #
         directions = ['backward']
         #, axis=0
     elif kind=='forward':
-        #
         directions = ['forward']
-        #
     elif kind=='filtfilt':
-        #
         directions = ['forward','backward']
 
     res = data
     for direction in directions:
-        #
         if direction=='backward':
-            #
             res = np.flip( res, axis=0 )
-            #
     
         res = signal.sosfilt(sos, res,axis=0)
 
         if direction=='backward':
-            #
             res = np.flip( res, axis=0 )
-            #
 
     return res
 
