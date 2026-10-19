@@ -20,10 +20,9 @@ def parse_spotter_files(
     lf_filter=False,
     include_n_channel=False,
 ):
-    """
-    Combine selected SPOTTER output files  into CSV files. This
-    routine is called by cli_main and that calls in succession the separate
-    routines to concatenate, and parse files.
+    """Combine selected SPOTTER output files  into CSV files. This routine is called by
+    cli_main and that calls in succession the separate routines to concatenate, and parse
+    files.
     """
 
     # Check the version of Files
@@ -48,10 +47,12 @@ def parse_spotter_files(
 
     if any([version["number"] < 3 for version in versions]):
         print(
-            "WARNING: This parser version no longer supports legacy SST files (firmware 1.12.x and below)."
+            "WARNING: This parser version no longer supports legacy SST files (firmware"
+            "1.12.x and below)."
         )
         print(
-            "         If you need to parse legacy SST files, please use the parser in the legacy/ subdirectory."
+            "         If you need to parse legacy SST files, please use the parser in \n"
+            "         the legacy/ subdirectory."
         )
         print("Press enter to confirm (or q to quit):")
         log_errors("Warned about skipping legacy SST parsing.")
@@ -91,18 +92,17 @@ def parse_spotter_files(
     # Loop over versions
     outp = output_path
     if len(versions) == 1:
-        # if there is only a single version- we allow all files to be parsed.
-        # this is a clutch to account for the fact that sys files are not
-        # guaranteed to be written. In general assuming everything is the
-        # same version seems safe- allowing to parse multiple different
-        # versions is perhaps something we want to stop supporting as it adds
-        # a lot of fragile logic.
+        # if there is only a single version- we allow all files to be parsed. this is a
+        # clutch to account for the fact that sys files are not guaranteed to be written.
+        # In general assuming everything is the same version seems safe- allowing to parse
+        # multiple different versions is perhaps something we want to stop supporting as
+        # it adds a lot of fragile logic.
         versions[0]["fileNumbers"] = None
 
     for index, version in enumerate(versions):
         if len(versions) > 1:
-            # When there are multiple conflicting version, we push output
-            # to different subdirectories
+            # When there are multiple conflicting version, we push output to different
+            # subdirectories
             output_path = os.path.join(outp, str(index))
         else:
             output_path = outp
@@ -152,9 +152,8 @@ def parse_spotter_files(
                         )
                         raise
                 elif suffix in ["SPC"]:
-                    # parse the mean location/displacement files; this step
-                    # extract relevant spectra (Szz, Sxx etc.) from the bulk
-                    # spectral file
+                    # parse the mean location/displacement files; this step extract
+                    # relevant spectra (Szz, Sxx etc.) from the bulk spectral file
                     parseSpectralFiles(
                         inputFileName=fileName,
                         outputPath=output_path,
@@ -270,8 +269,8 @@ class Spectrum:
                 )
 
                 if data.ndim == 1:
-                    # If there is only 1 line in the file, we need to add a dimension to the data as numpy returns a
-                    # 1D array in this case.
+                    # If there is only 1 line in the file, we need to add a dimension to
+                    # the data as numpy returns a 1D array in this case.
                     data = data[None, :]
 
                 self.time = data[:, 0:8]
@@ -377,7 +376,11 @@ class Spectrum:
         pdspr = self.peak_spreading()
 
         with open(os.path.join(self.outpath, "bulkparameters.csv"), "w") as file:
-            header = "# year , month , day, hour ,min, sec, milisec , Significant Wave Height, Mean Period, Peak Period, Mean Direction, Peak Direction, Mean Spreading, Peak Spreading\n"
+            header = (
+                "# year , month , day, hour ,min, sec, milisec , Significant Wave Height,"
+                " Mean Period, Peak Period, Mean Direction, Peak Direction,"
+                " Mean Spreading, Peak Spreading\n"
+            )
             file.write(header)
             format = "%d, " * 7 + "%6.2f, " * 6 + "%6.2f \n"
             for ii in range(0, len(hm0)):
@@ -429,9 +432,9 @@ supportedVersions = {
     "FE6412C3": "1.13.0",
 }
 
-# number assigned to each release, and compatibility number (each release
-#    gets a new number, and shares a compatibility number with all releases
-#    that can be concatenated in single output files.
+# number assigned to each release, and compatibility number (each release gets a new
+#    number, and shares a compatibility number with all releases that can be concatenated
+#    in single output files.
 ordinalVersionNumber = {
     "1446ABC": (0, 0),
     "9BEADBE": (1, 0),
@@ -456,12 +459,11 @@ ordinalVersionNumber = {
     "93CE0B95": (18, 2),
     "FE6412C3": (19, 3),
 }
-# The default version number is used by spectral and location parsing routines
-# as default compatibility number if none is given
+# The default version number is used by spectral and location parsing routines as default
+# compatibility number if none is given
 defaultVersion = 0
 defaultIIRWeightType = 0
-# Phase correction by applying the IIR to the reversed
-# signal
+# Phase correction by applying the IIR to the reversed signal
 applyPhaseCorrection = True
 applyPhaseCorrectionFromVersionNumber = 2
 
@@ -488,10 +490,8 @@ def parseLocationFiles(
     IIRWeightType=defaultIIRWeightType,
     include_n_channel=False,
 ):
-    """
-    This functions loads all the gps-location data (located at *path*) from
-    a Spotter into one datastructure and saves the result as a CSV file
-    (*outputFileName*).
+    """This functions loads all the gps-location data (located at *path*) from a Spotter
+    into one datastructure and saves the result as a CSV file (*outputFileName*).
     """
 
     fname, ext = os.path.splitext(outputFileName)
@@ -514,7 +514,8 @@ def parseLocationFiles(
                 )
             except ValueError:
                 print(
-                    "WARNING: include_n_channel requested, but outn(mm) was not found. Continuing without n channel."
+                    "WARNING: include_n_channel requested, but outn(mm) was not found."
+                    " Continuing without n channel."
                 )
                 data = pd.read_csv(
                     inputFileName,
@@ -675,9 +676,6 @@ def parseLocationFiles(
     return None
 
 
-# end def
-
-
 def epochToDateArray(epochtime):
 
     datetime = np.array([list(time.gmtime(x))[0:6] for x in epochtime])
@@ -734,8 +732,6 @@ def parseSpectralFiles(
             raise Exception("unknown key: " + key + " in " + errorLocation)
         return out
 
-    # end def
-
     outputFileName = {
         "Szz": "Szz.CSV",
         "Cxz": "Cxz.CSV",
@@ -764,13 +760,13 @@ def parseSpectralFiles(
         fname, ext = os.path.splitext(outputFileName[key])
         outputFileName[key] = fname + "." + extensions(outputFileType)
 
-    # The output files given by the script; per default only Szz is given, but
-    # can be altered by user request
+    # The output files given by the script; per default only Szz is given, but can be
+    # altered by user request
     if outputSpectra is None:
         outputSpectra = ["Szz"]
     else:
-        # For user requested output, make sure variables are known and have
-        # correct case/permutations/etc.
+        # For user requested output, make sure variables are known and have correct
+        # case/permutations/etc.
         for index, key in enumerate(outputSpectra):
             keyName = checkKeyNames(key, "output list")
             outputSpectra[index] = keyName
@@ -789,8 +785,8 @@ def parseSpectralFiles(
         "Cxy": 6,
         "Qxy": 12,
     }
-    # Column ordering changed from v1.4.1 onwards; extra columns due
-    # to cross-correlation filter between z and w.
+    # Column ordering changed from v1.4.1 onwards; extra columns due to cross-correlation
+    # filter between z and w.
     extendedStartColumnNumber = {
         "Szz": 5,
         "Cxz": 8,
@@ -835,24 +831,23 @@ def parseSpectralFiles(
     layout = detect_spc_layout(inputFileName)
     if layout == "extended":
         startColumnNumber = extendedStartColumnNumber
-        num_spectra = n_extended_spectra  # auto-, co-, and cross-spectra for four channels (x, y, z, and n)
+        # auto-, co-, and cross-spectra for four channels (x, y, z, and n)
+        num_spectra = n_extended_spectra
     elif layout == "legacy":
         startColumnNumber = legacyStartColumnNumber
-        num_spectra = n_legacy_spectra  # auto-, co-, and cross-spectra for three channels (x, y, and z)
-    elif versionNumber in [
-        0,
-        2,
-        3,
-    ]:  # default to version number for identifying start column number
+        # auto-, co-, and cross-spectra for three channels (x, y, and z)
+        num_spectra = n_legacy_spectra
+    elif versionNumber in [0, 2, 3]:  # default to version number for identifying start
+        # column number
         startColumnNumber = legacyStartColumnNumber
         num_spectra = n_legacy_spectra
     else:
         startColumnNumber = extendedStartColumnNumber
         num_spectra = n_extended_spectra
 
-    stride = (
-        2 * num_spectra
-    )  # SPC files hold both real and imaginary parts of spectra, so stride is 2x number of spectra
+    # SPC files hold both real and imaginary parts of spectra, so stride is 2x number of
+    # spectra
+    stride = 2 * num_spectra
 
     if not include_n_channel:
         gated_n_channels = {"Snn", "Czn"}
@@ -869,17 +864,18 @@ def parseSpectralFiles(
     for key in outputSpectra:
         if key not in available_output:
             print(
-                f"WARNING: requested spectrum {key} is not available in this file format/version; skipping."
+                f"WARNING: requested spectrum {key} is not available in this file"
+                " format/version; skipping."
             )
             continue
         filtered.append(key)
     outputSpectra = filtered
 
-    # Read csv file using Pandas - this is the only section in the code
-    # still reliant on Pandas, and only there due to supposed performance
-    # benefits.
-    # Provide explicit names so mixed-width spectral rows can be parsed when
-    # a file contains both legacy and extended layouts.
+    # Read csv file using Pandas - this is the only section in the code still reliant on
+    # Pandas, and only there due to supposed performance benefits.
+    #
+    # Provide explicit names so mixed-width spectral rows can be parsed when a file
+    # contains both legacy and extended layouts.
     tmp = pd.read_csv(
         inputFileName,
         index_col=False,
@@ -889,21 +885,20 @@ def parseSpectralFiles(
         usecols=tuple(range(2, 5 + stride * nf)),
     )
 
-    # Ensure the dataframe is numeric, coerce any occurences of bad data
-    # (strings etc) to NaN and return a numpy numerica array
+    # Ensure the dataframe is numeric, coerce any occurences of bad data (strings etc) to
+    # NaN and return a numpy numerica array
     tmp = tmp.apply(pd.to_numeric, errors="coerce").values
 
     datetime = epochToDateArray(tmp[:, 0])
     ensembleNum = tmp[:, 2] * 2
     data = {}
     for key in startColumnNumber:
-        # Convert to variance density and change units to m2/hz (instead
-        # of mm^2/hz)
+        # Convert to variance density and change units to m2/hz (instead of mm^2/hz)
         data[key] = tmp[:, startColumnNumber[key] :: stride] / (1000000.0 * df)
         # Set low frequency columns to NaN
         data[key][:, 0:3] = np.nan
-    # Calculate directional moments from data (if requested). Because these are
-    # derived quantities these need to be included in the dataframe a-postiori
+    # Calculate directional moments from data (if requested). Because these are derived
+    # quantities these need to be included in the dataframe a-postiori
     if any([x in ["a1", "b1", "a2", "b2"] for x in outputSpectra]):
         with np.errstate(invalid="ignore", divide="ignore"):
             # Supress divide by 0; silently produce NaN
@@ -974,13 +969,8 @@ def parseSpectralFiles(
     return None
 
 
-# end def
-
-
 def lowFrequencyFilter(data):
-    """
-    function to perform the low-frequency filter
-    """
+    """Perform the low-frequency filter."""
     with np.errstate(invalid="ignore", divide="ignore"):
         # Ignore division by 0 etc (this is caught below)
         Gxz = (data["Cxz"] ** 2 + data["Qxz"] ** 2) / (data["Sxx"] * data["Szz"])
@@ -998,9 +988,6 @@ def lowFrequencyFilter(data):
     return data
 
 
-# end def
-
-
 def getFileNames(path, suffix, message, versionFileList=None):
     """Return all the filenames in a given `path` that conform to '????_YYY.CSV' where
     'YYY' is given by `suffix`.
@@ -1015,8 +1002,8 @@ def getFileNames(path, suffix, message, versionFileList=None):
     synonyms = [suffix]
     if suffix == "LOC":
         synonyms.append("GPS")
-    # Get the file list from the directory, and select only those files that
-    # match the Spotter output filename signature
+    # Get the file list from the directory, and select only those files that match the
+    # Spotter output filename signature
 
     if versionFileList is not None:
         # Only add filenames that are in the present version file number list
@@ -1071,10 +1058,8 @@ def cat(
     versionFileList=None,
     compatibilityVersion=defaultVersion,
 ):
-    """
-    This functions concatenates raw csv files with a header. Only for the first
-    file it retains the header. Note that for SPEC files special
-    processing is done.
+    """Concatenate raw csv files with a header. Only for the first file retain the header.
+    Note that for SPEC files special processing is done.
     """
 
     def modeDetection(input_path, filename):
@@ -1096,7 +1081,7 @@ def cat(
         return mode
 
     def find_nth(haystack, needle, n):
-        """Find nth and nth-1 occurrences of a needle in the haystack"""
+        """Find nth and nth-1 occurrences of a needle in the haystack."""
         start = haystack.find(needle)
         prev = start
         while start >= 0 and n > 1:
@@ -1105,7 +1090,6 @@ def cat(
             n -= 1
         return (start, prev)
 
-    # end nested function
     # Get a list of location filenames and the absolute path
     path, fileNames = getFileNames(
         path=path, suffix=Suffix, message="_" + Suffix, versionFileList=versionFileList
@@ -1188,7 +1172,8 @@ def cat(
                         # https://docs.python.org/3/tutorial/inputoutput.html#methods-of-file-objects
                         if not line.endswith("\n"):
                             log_errors(
-                                f"DEBUG: cat(): not SPC: skipping line {line_num} of file {filename}"
+                                f"DEBUG: cat(): not SPC: skipping line {line_num} of file"
+                                f" {filename}"
                             )
                             continue
                         # if this is the first file of this type, keep the header
@@ -1203,17 +1188,12 @@ def cat(
                         outfile.write(line)
                 except UnicodeDecodeError as e:
                     print(
-                        f"WARNING: likely corrupt line near line number {line_num} in {fqfn}, continuing: {e}"
+                        f"WARNING: likely corrupt line near line number {line_num} in"
+                        f" {fqfn}, continuing: {e}"
                     )
                     continue
-                # end try
-            # end with
-        # end if
     outfile.close()
     return True
-
-
-# end def
 
 
 def validCommandLineArgument(arg):
@@ -1241,11 +1221,9 @@ def validCommandLineArgument(arg):
 
 
 def getVersions(path):
-    """
-    This function retrieves sha from sys filenames; if no sha is present
-    within the first 20 lines, it is assumed the previous found sha is
-    active. The output is a version list; each entry in the version list
-    is a dict that contains all file prefixes (0009 etc.) that can be
+    """Retrieve sha from sys filenames; if no sha is present within the first 20 lines,
+    assume the previous found sha is active. Return a version list; each entry in the
+    version list is a dict that contains all file prefixes (0009 etc.) that can be
     processed in the same way (this may go across firmware versions).
     """
 
@@ -1259,7 +1237,6 @@ def getVersions(path):
                 latVer = key
         return latVer
 
-    # end def
     first = True
     version = []
     # Loop over all the _SYS files
@@ -1304,9 +1281,9 @@ def getVersions(path):
             )
             first = False
         elif not foundSha and first:
-            # this is the first file, but no sha - we will try to continue
-            # under the assumption that the version corresponds to the
-            # latest version - may lead to problems in older version
+            # this is the first file, but no sha - we will try to continue under the
+            # assumption that the version corresponds to the latest version - may lead to
+            # problems in older version
             print("WARNING: Cannot determine version number")
             sha = latestVersion()
             version.append(
@@ -1321,14 +1298,14 @@ def getVersions(path):
             )
             first = False
         elif foundSha and not first:
-            # We found a new sha, check if it is the same as previous found sha
-            # and if so just continue
+            # We found a new sha, check if it is the same as previous found sha and if so
+            # just continue
             if not (
                 sha in version[-1]["sha"]
                 and version[-1]["IIRWeightType"] == IIRWeightType
             ):
-                # if not, check if this version is compatible with the previous
-                # found version
+                # if not, check if this version is compatible with the previous found
+                # version
                 if (
                     ordinalVersionNumber[sha][1] == version[-1]["number"]
                     and version[-1]["IIRWeightType"] == IIRWeightType
@@ -1338,8 +1315,8 @@ def getVersions(path):
                     version[-1]["ordinal"].append(ordinalVersionNumber[sha])
                     version[-1]["version"].append(supportedVersions[sha])
                 else:
-                    # Not Compatible, we add a new version to the version list
-                    # that has to be processed seperately
+                    # Not Compatible, we add a new version to the version list that has to
+                    # be processed seperately
                     version.append(
                         {
                             "sha": [sha],
@@ -1358,8 +1335,7 @@ def getVersions(path):
 
 
 def filterSOS(versionNumber, IIRWeightType):
-    """
-    Get second-order sections coefficients for IIR filter based on version and weight type.
+    """Get second-order sections coefficients for IIR filter based on version and weight type.
 
     Args:
         versionNumber (int): Version number of the data format
@@ -1379,7 +1355,8 @@ def filterSOS(versionNumber, IIRWeightType):
         IIRWeightType = int(IIRWeightType)
     except (ValueError, TypeError) as e:
         raise TypeError(
-            f"Version number and IIR weight type must be numeric. Got {type(versionNumber)}, {type(IIRWeightType)}"
+            "Version number and IIR weight type must be numeric. Got"
+            f" {type(versionNumber)}, {type(IIRWeightType)}"
         )
 
     # Version 0 and below are not supported
@@ -1442,7 +1419,8 @@ def filterSOS(versionNumber, IIRWeightType):
 
         if IIRWeightType not in filter_configs:
             raise ValueError(
-                f"IIRWeightType {IIRWeightType} not supported for version {versionNumber}. Valid types: {list(filter_configs.keys())}"
+                f"IIRWeightType {IIRWeightType} not supported for version"
+                f" {versionNumber}. Valid types: {list(filter_configs.keys())}"
             )
 
         config = filter_configs[IIRWeightType]
