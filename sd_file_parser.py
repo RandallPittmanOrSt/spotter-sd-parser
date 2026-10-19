@@ -45,7 +45,7 @@ def parse_spotter_files(
         "SST",
     ]
 
-    if any([version["number"] < 3 for version in versions]):
+    if any(version["number"] < 3 for version in versions):
         print(
             "WARNING: This parser version no longer supports legacy SST files (firmware"
             "1.12.x and below)."
@@ -114,7 +114,7 @@ def parse_spotter_files(
             fileName = os.path.join(output_path, outFiles[suffix] + ".csv")
 
             # For each filetype, concatenate files to intermediate CSV files...
-            print("Concatenating all " + suffix + " files:")
+            print(f"Concatenating all {suffix} files:")
             if not (
                 cat(
                     path=input_path,
@@ -170,7 +170,7 @@ def parse_spotter_files(
         spectrum = Spectrum(path=output_path, outpath=output_path)
         spectrum.generate_text_file()
     # Versions
-    print("Done. Processed data saved in : " + output_path)
+    print(f"Done. Processed data saved in : {output_path}")
     return output_path
 
 
@@ -383,7 +383,7 @@ class Spectrum:
             )
             file.write(header)
             format = "%d, " * 7 + "%6.2f, " * 6 + "%6.2f \n"
-            for ii in range(0, len(hm0)):
+            for ii in range(len(hm0)):
                 string = format % (
                     self.time[ii, 0],
                     self.time[ii, 1],
@@ -494,8 +494,8 @@ def parseLocationFiles(
     into one datastructure and saves the result as a CSV file (*outputFileName*).
     """
 
-    fname, ext = os.path.splitext(outputFileName)
-    outputFileName = fname + "." + extensions(outputFileType)
+    fstem, _ = os.path.splitext(outputFileName)
+    outputFileName = f"{fstem}.{extensions(outputFileType)}"
 
     # Load location data into a pandas dataframe object
     if reportProgress:
@@ -553,7 +553,7 @@ def parseLocationFiles(
             and versionNumber >= applyPhaseCorrectionFromVersionNumber
         ):
             print("- IIR phase correction using weight type: ", str(IIRWeightType))
-            for ii in range(0, n_dims):
+            for ii in range(n_dims):
                 data[:, ii] = applyfilter(
                     data[:, ii], "backward", versionNumber, IIRWeightType
                 )
@@ -672,8 +672,6 @@ def parseLocationFiles(
                 lon=data[:, 8].astype(np.float32),
                 time=data[:, 0:7].astype(np.int16),
             )
-    # endif
-    return None
 
 
 def epochToDateArray(epochtime):
@@ -729,7 +727,7 @@ def parseSpectralFiles(
         elif key.lower() in ["a1", "b1", "a2", "b2"]:
             out = key.lower()
         else:
-            raise Exception("unknown key: " + key + " in " + errorLocation)
+            raise Exception(f"unknown key: {key} in {errorLocation}")
         return out
 
     outputFileName = {
@@ -756,9 +754,9 @@ def parseSpectralFiles(
             keyName = checkKeyNames(key, "output file names")
             outputFileName[keyName] = outputFileNameDict[key]
 
-    for key in outputFileName:
-        fname, ext = os.path.splitext(outputFileName[key])
-        outputFileName[key] = fname + "." + extensions(outputFileType)
+    for key, filename in outputFileName.items():
+        fstem, _ = os.path.splitext(filename)
+        outputFileName[key] = f"{fstem}.{extensions(outputFileType)}"
 
     # The output files given by the script; per default only Szz is given, but can be
     # altered by user request
@@ -814,13 +812,11 @@ def parseSpectralFiles(
             for idx, row in enumerate(reader):
                 if idx == 0:
                     continue
-                if len(row) > max_columns:
-                    max_columns = len(row)
+                max_columns = max(max_columns, len(row))
                 if idx >= 200:
                     break
-        if (
-            max_columns == n_header_columns + 2 * n_extended_spectra * nf
-        ):  # factor of 2 for imaginary part of spectra
+        # factor of 2 for imaginary part of spectra
+        if max_columns == n_header_columns + 2 * n_extended_spectra * nf:
             return "extended"
         if max_columns == n_header_columns + 2 * n_legacy_spectra * nf:
             return "legacy"
@@ -899,16 +895,12 @@ def parseSpectralFiles(
         data[key][:, 0:3] = np.nan
     # Calculate directional moments from data (if requested). Because these are derived
     # quantities these need to be included in the dataframe a-postiori
-    if any([x in ["a1", "b1", "a2", "b2"] for x in outputSpectra]):
+    if any(x in ["a1", "b1", "a2", "b2"] for x in outputSpectra):
         with np.errstate(invalid="ignore", divide="ignore"):
             # Supress divide by 0; silently produce NaN
-            data["a1"] = data["Qxz"] / np.sqrt(
-                (data["Szz"] * (data["Sxx"] + data["Syy"]))
-            )
+            data["a1"] = data["Qxz"] / np.sqrt(data["Szz"] * (data["Sxx"] + data["Syy"]))
             data["a2"] = (data["Sxx"] - data["Syy"]) / (data["Sxx"] + data["Syy"])
-            data["b1"] = data["Qyz"] / np.sqrt(
-                (data["Szz"] * (data["Sxx"] + data["Syy"]))
-            )
+            data["b1"] = data["Qyz"] / np.sqrt(data["Szz"] * (data["Sxx"] + data["Syy"]))
             data["b2"] = 2.0 * data["Cxy"] / (data["Sxx"] + data["Syy"])
 
         for key in ["a1", "b1", "a2", "b2"]:
@@ -926,9 +918,9 @@ def parseSpectralFiles(
 
     # construct header for use in CSV
     header = "year,month,day,hour,min,sec,milisec,dof"
-    freq = np.array(list(range(0, nf))) * df
+    freq = np.arange(nf) * df
     for f in freq:
-        header = header + "," + str(f)
+        header = f"{header},{f}"
 
     # write data to requested output format
     for key in outputSpectra:
@@ -966,7 +958,6 @@ def parseSpectralFiles(
                 frequencies=freq.astype(np.float32),
                 dof=mat[:, 7].astype(np.int16),
             )
-    return None
 
 
 def lowFrequencyFilter(data):
@@ -983,7 +974,7 @@ def lowFrequencyFilter(data):
 
     names = ["Szz", "Cxz", "Qxz", "Cyz", "Qyz", "Sxx", "Syy", "Cxy", "Qxy"]
     for key in names:
-        for jj in range(0, G.shape[0]):
+        for jj in range(G.shape[0]):
             data[key][jj, 0 : I[jj]] = data[key][jj, 0 : I[jj]] * G[jj, 0 : I[jj]]
     return data
 
@@ -1010,9 +1001,9 @@ def getFileNames(path, suffix, message, versionFileList=None):
         fileNames = []
         for filename in sorted(os.listdir(path)):
             if (
-                fnmatch.fnmatch(filename, "????_" + suffix + ".CSV")
-                or fnmatch.fnmatch(filename, "????_" + suffix + ".csv")
-                or fnmatch.fnmatch(filename, "????_" + suffix + ".log")
+                fnmatch.fnmatch(filename, f"????_{suffix}.CSV")
+                or fnmatch.fnmatch(filename, f"????_{suffix}.csv")
+                or fnmatch.fnmatch(filename, f"????_{suffix}.log")
             ):
                 num, ___ = filename.split("_")
                 num = num.strip()
@@ -1023,15 +1014,15 @@ def getFileNames(path, suffix, message, versionFileList=None):
             filename
             for filename in sorted(os.listdir(path))
             if (
-                fnmatch.fnmatch(filename, "????_" + suffix + ".CSV")
-                or fnmatch.fnmatch(filename, "????_" + suffix + ".csv")
-                or fnmatch.fnmatch(filename, "????_" + suffix + ".log")
+                fnmatch.fnmatch(filename, f"????_{suffix}.CSV")
+                or fnmatch.fnmatch(filename, f"????_{suffix}.csv")
+                or fnmatch.fnmatch(filename, f"????_{suffix}.log")
             )
         ]
     # Are there valid Spotter files?
     if len(fileNames) < 1:
         # No files found; raise exception and exit
-        print("  No " + message + " data files available.")
+        print(f"  No {message} data files available.")
     return (path, fileNames)
 
 
@@ -1092,13 +1083,13 @@ def cat(
 
     # Get a list of location filenames and the absolute path
     path, fileNames = getFileNames(
-        path=path, suffix=Suffix, message="_" + Suffix, versionFileList=versionFileList
+        path=path, suffix=Suffix, message=f"_{Suffix}", versionFileList=versionFileList
     )
     if len(fileNames) == 0:
         return False
 
-    fname, ext = os.path.splitext(outputFileName)
-    outputFileName = fname + "." + extensions(outputFileType)
+    fname = os.path.splitext(outputFileName)[0]
+    outputFileName = f"{fname}.{extensions(outputFileType)}"
     compress = outputFileType.lower() == "gz"
 
     if compress:
@@ -1107,9 +1098,7 @@ def cat(
         outfile = open(outputFileName, "w")
     for index, filename in enumerate(fileNames):
         if reportProgress:
-            print(
-                "- " + filename + " (File {} out of {})".format(index + 1, len(fileNames))
-            )
+            print(f"- {filename} (File {index + 1} out of {len(fileNames)})")
 
         if Suffix == "SPC":
             ip = 0
@@ -1117,7 +1106,7 @@ def cat(
             mode = modeDetection(path, filename)
 
             with open(os.path.join(path, filename)) as infile:
-                try:  #
+                try:
                     # lines = infile.readlines()
                     ii = 0
                     line = infile.readline()
@@ -1153,10 +1142,8 @@ def cat(
                             # end if
                         # end if
                     # end for line
-                except Exception as e:
-                    message = (
-                        "- ERROR:, file " + os.path.join(path, filename) + " is corrupt"
-                    )
+                except Exception:
+                    message = f"- ERROR:, file {os.path.join(path, filename)} is corrupt"
                     log_errors(message)
                     print(message)
             # end with
@@ -1199,8 +1186,8 @@ def cat(
 def validCommandLineArgument(arg):
     out = arg.split("=")
 
-    if not (len(out) == 2):
-        print("ERROR: Unknown commandline argument: " + arg)
+    if len(out) != 2:
+        print(f"ERROR: Unknown commandline argument: {arg}")
         sys.exit()
     key, val = out
 
@@ -1215,7 +1202,7 @@ def validCommandLineArgument(arg):
     elif key.lower() in ["bulkparameters"]:
         key = "bulkParameters"
     else:
-        print("ERROR: unknown commandline argument " + key)
+        print(f"ERROR: unknown commandline argument {key}")
         sys.exit()
     return (key, val)
 
@@ -1246,8 +1233,7 @@ def getVersions(path):
         IIRWeightType = defaultIIRWeightType
         # Check if there is a sha in first 80 lines
         with open(os.path.join(path, filename)) as infile:
-            jline = 0
-            for line in infile:
+            for jline, line in enumerate(infile):
                 if "SHA" in line:
                     sha = line.split(":")
                     sha = sha[-1].strip()
@@ -1256,15 +1242,12 @@ def getVersions(path):
                     ___, IIRWeightType = line.split(":")
                     IIRWeightType = int(IIRWeightType.strip())
                     foundIIRWeightType = True
-                jline += 1
                 if (foundSha and foundIIRWeightType) or jline > 80:
                     break
         # If we found a SHA, check if it is valid
-        if foundSha:
-            # Is it a valid sha?
-            if not sha in ordinalVersionNumber:
-                # If not - parse using the latest version
-                sha = latestVersion()
+        if foundSha and sha not in ordinalVersionNumber:
+            # If not - parse using the latest version
+            sha = latestVersion()
 
         # Valid sha, so what to do?
         if foundSha and first:
@@ -1353,7 +1336,7 @@ def filterSOS(versionNumber, IIRWeightType):
     try:
         versionNumber = int(versionNumber)
         IIRWeightType = int(IIRWeightType)
-    except (ValueError, TypeError) as e:
+    except (ValueError, TypeError):
         raise TypeError(
             "Version number and IIR weight type must be numeric. Got"
             f" {type(versionNumber)}, {type(IIRWeightType)}"
@@ -1513,12 +1496,12 @@ Examples:
         args.output_path = os.path.join(args.input_path, "processed")
 
     # Call the actual processing function
-    parse_kwargs = dict(
-        input_path=args.input_path,
-        output_path=args.output_path,
-        output_format=args.format,
-        spectra=args.spectra,
-    )
+    parse_kwargs = {
+        "input_path": args.input_path,
+        "output_path": args.output_path,
+        "output_format": args.format,
+        "spectra": args.spectra,
+    }
     if args.include_n_channel:
         parse_kwargs["include_n_channel"] = True
 
