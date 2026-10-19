@@ -30,7 +30,7 @@ NOTE: the original data files will remain unchanged.
 
 # Installation
 
-In order to use this script, python (version 2 or 3) needs to be installed
+In order to use this script, python (version 3.11+) needs to be installed
 on the system (download at: www.python.org). In addition, for functionality 
 the script requires that the following python modules:
 
