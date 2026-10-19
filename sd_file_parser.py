@@ -1,13 +1,16 @@
+import argparse
+import csv
+import fnmatch
+import gzip
 import os
 import sys
-import argparse
 import time
-from glob import glob
 
 import numpy as np
 import pandas as pd
 from scipy import signal
 from scipy.io import savemat
+
 
 def parse_spotter_files( input_path = None , output_path=None, output_format='CSV',
           spectra='all', lf_filter = False, include_n_channel=False):
@@ -775,7 +778,6 @@ def parseSpectralFiles( inputFileName=None,
 
     def detect_spc_layout(path):
         # Detect spectral layout from actual data rows.
-        import csv
         max_columns = 0
         with open(path, newline='') as f:
             reader = csv.reader(f)
@@ -995,7 +997,6 @@ def getFileNames( path , suffix , message,versionFileList=None ):
     # This function returns all the filenames in a given *path*
     # that conform to ????_YYY.CSV where YYY is given by *suffix*.
     #
-    import fnmatch
     
     if path is None:
         #
@@ -1084,7 +1085,6 @@ def cat( path = None, outputFileName = 'displacement.CSV', Suffix='FLT',
     file it retains the header. Note that for SPEC files special
     processing is done.
     """
-    import gzip
     #
 
     def modeDetection( input_path , filename ):
